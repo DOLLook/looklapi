@@ -4,6 +4,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/streadway/amqp"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -28,6 +29,7 @@ const (
 	_Idle    channelStatus = iota // 空闲
 	_Busy                         // 使用中
 	_Timeout                      // 超时空闲
+	_Close                        // 关闭
 )
 
 // rabbitmq连接池
@@ -41,6 +43,7 @@ type rabbitmqConnPool struct {
 
 	recConns []*rabbitMqConnData // 消费连接
 	recChs   []*mqChannel        // 消费者channel pool
+	recMu    *sync.Mutex         // 消费者管理锁
 }
 
 // rabbitmq连接数据

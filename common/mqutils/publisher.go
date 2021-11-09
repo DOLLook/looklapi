@@ -1,7 +1,6 @@
 package mqutils
 
 import (
-	"errors"
 	"github.com/streadway/amqp"
 	"go-webapi-fw/common/mongoutils"
 	"go-webapi-fw/common/utils"
@@ -55,10 +54,6 @@ func pubWorkQueueMsg(routeKey string, jsonMsg string) (bool, error) {
 		return false, err
 	}
 
-	if pubChan.Channel == nil {
-		return false, errors.New("发布通道异常")
-	}
-
 	if _, err := pubChan.Channel.QueueDeclare(routeKey, true, false, false, false, nil); err != nil {
 		return false, err
 	}
@@ -86,10 +81,6 @@ func pubBroadcastMsg(exchange string, jsonMsg string) (bool, error) {
 	pubChan, err := getPubChannel()
 	if err != nil {
 		return false, err
-	}
-
-	if pubChan.Channel == nil {
-		return false, errors.New("发布通道异常")
 	}
 
 	if err := pubChan.Channel.ExchangeDeclare(exchange, "fanout", false, true, false, false, nil); err != nil {

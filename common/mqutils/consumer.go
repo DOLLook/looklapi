@@ -16,22 +16,29 @@ func BindConsumer() {
 	}
 
 	for _, item := range _consumerContainer {
-		if item == nil {
-			panic("invalid nil consumer")
-		}
-
-		switch item.Type {
-		case _WorkQueue:
-			for i := uint32(0); i < item.Concurrency; i++ {
-				bindWorkQueueConsumer(item)
-			}
-			break
-		case _Broadcast:
-			bindBroadcastConsumer(item)
-			break
-		}
+		bindConsumer(item)
 	}
 	_hasConsumerBind = true
+}
+
+/**
+绑定消费者
+*/
+func bindConsumer(consumer *consumer) {
+	if consumer == nil {
+		panic("invalid nil consumer")
+	}
+
+	switch consumer.Type {
+	case _WorkQueue:
+		for i := uint32(0); i < consumer.Concurrency; i++ {
+			bindWorkQueueConsumer(consumer)
+		}
+		break
+	case _Broadcast:
+		bindBroadcastConsumer(consumer)
+		break
+	}
 }
 
 /**
@@ -66,12 +73,30 @@ func bindWorkQueueConsumer(consumer *consumer) {
 		panic(err)
 	}
 
+	errChan := make(chan *amqp.Error, 1)
+	errChan = recChan.Channel.NotifyClose(errChan)
+
 	go func() {
-		for delivery := range deliverCh {
-			if consumer.Parallel && consumer.PrefetchCount > 1 {
-				go consume(&delivery, consumer)
-			} else {
-				consume(&delivery, consumer)
+		//for delivery := range deliverCh {
+		//	if consumer.Parallel && consumer.PrefetchCount > 1 {
+		//		go consume(&delivery, consumer)
+		//	} else {
+		//		consume(&delivery, consumer)
+		//	}
+		//}
+		for {
+			select {
+			case delivery := <-deliverCh:
+				if consumer.Parallel && consumer.PrefetchCount > 1 {
+					go consume(&delivery, consumer)
+				} else {
+					consume(&delivery, consumer)
+				}
+			case err := <-errChan:
+				mongoutils.Error(err)
+				removeConsumerChannel(recChan)
+				bindConsumer(consumer)
+				return
 			}
 		}
 	}()
@@ -116,9 +141,23 @@ func bindBroadcastConsumer(consumer *consumer) {
 		panic(err)
 	}
 
+	errChan := make(chan *amqp.Error, 1)
+	errChan = recChan.Channel.NotifyClose(errChan)
+
 	go func() {
-		for delivery := range deliverCh {
-			consume(&delivery, consumer)
+		//for delivery := range deliverCh {
+		//	consume(&delivery, consumer)
+		//}
+		for {
+			select {
+			case delivery := <-deliverCh:
+				consume(&delivery, consumer)
+			case err := <-errChan:
+				mongoutils.Error(err)
+				removeConsumerChannel(recChan)
+				bindConsumer(consumer)
+				return
+			}
 		}
 	}()
 

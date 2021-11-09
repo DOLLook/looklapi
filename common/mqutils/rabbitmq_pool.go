@@ -8,6 +8,7 @@ import (
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
 	"sort"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -26,6 +27,7 @@ func init() {
 
 		recConns: make([]*rabbitMqConnData, 0, _connLimt),
 		recChs:   make([]*mqChannel, 0, _chLimitForConn),
+		recMu:    &sync.Mutex{},
 	}
 	_rabbitmqConnPool.pubLock = new(int32)
 
@@ -43,8 +45,26 @@ func addConsumerChannel(consumer *mqChannel) {
 	if consumer == nil || consumer.Channel == nil {
 		return
 	}
+
+	_rabbitmqConnPool.recMu.Lock()
+	defer _rabbitmqConnPool.recMu.Unlock()
+
 	_rabbitmqConnPool.recChs = append(_rabbitmqConnPool.recChs, consumer)
 	consumer.Conn.incChan()
+}
+
+// 删除消费者
+func removeConsumerChannel(consumer *mqChannel) {
+	if consumer == nil || consumer.Channel == nil {
+		return
+	}
+
+	_rabbitmqConnPool.recMu.Lock()
+	defer _rabbitmqConnPool.recMu.Unlock()
+
+	if utils.SliceRemove(&_rabbitmqConnPool.recChs, consumer, 1) {
+		consumer.Conn.decChan()
+	}
 }
 
 // 获取消费者通道
@@ -112,7 +132,7 @@ func pushPubChToPipe() {
 	// 查找空闲通道
 	var idleCh *mqChannel
 	for _, item := range _rabbitmqConnPool.pubChs {
-		if item.Status != _Busy {
+		if item.Status != _Busy && item.Status != _Close {
 			idleCh = item
 			break
 		}
@@ -181,6 +201,17 @@ func pushPubChToPipe() {
 	_rabbitmqConnPool.pubChs = append(_rabbitmqConnPool.pubChs, channel)
 	channel.Conn.incChan()
 	atomic.StoreInt32(_rabbitmqConnPool.pubLock, 0)
+
+	errChan := make(chan *amqp.Error, 1)
+	errChan = channel.Channel.NotifyClose(errChan)
+	go func() {
+		select {
+		case <-errChan:
+			channel.Status = _Close
+			//mongoutils.Error(chanErr)
+		}
+	}()
+
 	_rabbitmqConnPool.pubChPipeline <- channel
 }
 
@@ -220,17 +251,44 @@ func clearIdlPubConn() {
 		if item.Status == _Busy {
 			continue
 		}
-		if now-item.LastUseMills >= _chIdleTimeoutMin*60*1000 {
+
+		doClear := false
+		if item.Status == _Close {
+			doClear = true
+		} else if now-item.LastUseMills >= _chIdleTimeoutMin*60*1000 {
+			doClear = true
 			item.Status = _Timeout
+		}
+
+		if doClear {
 			if *item.Conn.LiveCh <= 1 {
+				// 关闭连接
 				if now-item.Conn.LastUseMills >= _connIdleTimeoutMin*60*1000 {
-					_rabbitmqConnPool.pubChs = _rabbitmqConnPool.pubChs[:i]
+					utils.SliceRemoveByIndex(&_rabbitmqConnPool.pubChs, i)
 					item.Conn.decChan()
 					delete(_rabbitmqConnPool.pubConns, item.Conn.Guid)
+
+					if item.Status == _Timeout {
+						if closeErr := item.Channel.Close(); closeErr != nil {
+							mongoutils.Error(closeErr)
+						}
+					}
+					if !item.Conn.Conn.IsClosed() {
+						if closeErr := item.Conn.Conn.Close(); closeErr != nil {
+							mongoutils.Error(closeErr)
+						}
+					}
 				}
 			} else {
-				_rabbitmqConnPool.pubChs = _rabbitmqConnPool.pubChs[:i]
+				// 仅关闭通道
+				utils.SliceRemoveByIndex(&_rabbitmqConnPool.pubChs, i)
 				item.Conn.decChan()
+
+				if item.Status == _Timeout {
+					if closeErr := item.Channel.Close(); closeErr != nil {
+						mongoutils.Error(closeErr)
+					}
+				}
 			}
 		}
 	}
