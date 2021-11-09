@@ -2,6 +2,8 @@
 package config
 
 import (
+	"fmt"
+	"go-webapi-fw/common/mongoutils"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
@@ -40,11 +42,13 @@ var appConfig = struct {
 func init() {
 	bytes, err := ioutil.ReadFile("application.yml")
 	if err != nil {
-		// TODO 错误日志
+		mongoutils.Error(err)
+		fmt.Println(err)
 		return
 	}
 
-	if yaml.Unmarshal(bytes, AppConfig) != nil {
-		// TODO 错误日志
+	if err := yaml.Unmarshal(bytes, AppConfig); err != nil {
+		mongoutils.Error(err)
+		fmt.Println(err)
 	}
 }
