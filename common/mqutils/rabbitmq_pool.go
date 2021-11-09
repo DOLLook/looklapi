@@ -110,6 +110,22 @@ func getConsumerChannel() *mqChannel {
 	return channel
 }
 
+/**
+尝试获取有效的发布通道
+maxTry 最大重试次数
+*/
+func tryGetPubChannel(maxTry int) (*mqChannel, error) {
+	if maxTry <= 1 {
+		return getPubChannel()
+	}
+
+	if pubChan, err := getPubChannel(); err != nil || pubChan.Status == _Close {
+		return tryGetPubChannel(maxTry - 1)
+	} else {
+		return pubChan, nil
+	}
+}
+
 // 获取发布通道
 func getPubChannel() (*mqChannel, error) {
 	pubChan := <-_rabbitmqConnPool.pubChPipeline
@@ -148,8 +164,10 @@ func pushPubChToPipe() {
 
 	// 未找到空闲通道 创建新通道
 	connSlice := make([]*rabbitMqConnData, len(_rabbitmqConnPool.pubConns))
+	connIndex := 0
 	for _, conn := range _rabbitmqConnPool.pubConns {
-		connSlice = append(connSlice, conn)
+		connSlice[connIndex] = conn
+		connIndex++
 	}
 	commonsl := utils.NewCommonSlice(connSlice)
 	validConns := commonsl.Filter(func(item interface{}) bool {

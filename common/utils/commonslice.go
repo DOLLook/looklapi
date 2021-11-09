@@ -18,10 +18,10 @@ func NewCommonSlice(slice interface{}) commonSlice {
 	slen := sval.Len()
 	commonsl := make(commonSlice, slen)
 	for i := 0; i < slen; i++ {
-		commonsl = append(commonsl, sval.Index(i).Interface())
+		commonsl[i] = sval.Index(i).Interface()
 	}
 
-	return nil
+	return commonsl
 }
 
 // 过滤器

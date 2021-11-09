@@ -49,7 +49,7 @@ func PubBroadcastMsg(exchange string, msg interface{}) bool {
 // 发布工作队列消息
 func pubWorkQueueMsg(routeKey string, jsonMsg string) (bool, error) {
 	var pubChan *mqChannel
-	pubChan, err := getPubChannel()
+	pubChan, err := tryGetPubChannel(3)
 	if err != nil {
 		return false, err
 	}
@@ -78,7 +78,7 @@ func pubWorkQueueMsg(routeKey string, jsonMsg string) (bool, error) {
 // 发布广播消息
 func pubBroadcastMsg(exchange string, jsonMsg string) (bool, error) {
 	var pubChan *mqChannel
-	pubChan, err := getPubChannel()
+	pubChan, err := tryGetPubChannel(3)
 	if err != nil {
 		return false, err
 	}
