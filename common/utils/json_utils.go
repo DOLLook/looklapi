@@ -4,7 +4,7 @@ import "encoding/json"
 
 // 转json
 func StructToJson(t interface{}) string {
-	if bytes, err := json.Marshal(t); err != nil {
+	if bytes, err := json.Marshal(t); err == nil {
 		return string(bytes)
 	}
 

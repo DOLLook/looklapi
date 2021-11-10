@@ -275,9 +275,9 @@ func (consumer *consumer) onRecieved(msg string) bool {
 
 	result := consumer.Consume(metaMsg.JsonContent)
 	if !result {
-		// todo 重试
+		result = retry(metaMsg, consumer)
 	} else {
-		// todo 成功处理
+		go retrySuccess(metaMsg, consumer.Type)
 	}
 
 	return result
