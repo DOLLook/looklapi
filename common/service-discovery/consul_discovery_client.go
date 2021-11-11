@@ -19,7 +19,7 @@ type consulServiceRegistry struct {
 var serviceRegistry *consulServiceRegistry
 
 /**
-创建注册到consul的服务到
+注册服务
 */
 func Register() {
 	serviceRegistry = new(consulServiceRegistry)

@@ -30,6 +30,9 @@ func (ctr *serviceController) RegistRoute(irisApp *iris.Application) {
 	party.Get("/healthCheck", ctr.healthCheck)
 }
 
+/**
+服务健康检查
+*/
 func (ctr *serviceController) healthCheck(ctx iris.Context) {
 	if serviceDiscovery.GetServiceManager().IsHostCutoff() {
 		ctx.StatusCode(http.StatusForbidden)

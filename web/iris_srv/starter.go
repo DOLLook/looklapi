@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// 启动web框架
+// 启动web服务
 func Start() {
 	app := iris.New()
 	//app.Use(middleware.ExceptionHandler())
