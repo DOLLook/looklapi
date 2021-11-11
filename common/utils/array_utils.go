@@ -267,3 +267,27 @@ func SliceRemoveByIndex(slicePtr interface{}, index ...int) bool {
 
 	return true
 }
+
+/**
+集合是否为空
+*/
+func CollectionIsEmpty(collection interface{}) bool {
+	if collection == nil {
+		return true
+	}
+
+	sValueOf := reflect.ValueOf(collection)
+	switch sValueOf.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
+		return sValueOf.Len() < 1
+	case reflect.Ptr:
+		switch sValueOf.Elem().Kind() {
+		case reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
+			return sValueOf.Elem().Len() < 1
+		default:
+			panic("invalid collection type")
+		}
+	default:
+		panic("invalid collection type")
+	}
+}

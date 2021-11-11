@@ -63,7 +63,12 @@ func removeConsumerChannel(consumer *mqChannel) {
 	defer _rabbitmqConnPool.recMu.Unlock()
 
 	if utils.SliceRemove(&_rabbitmqConnPool.recChs, consumer, 1) {
-		consumer.Conn.decChan()
+		//consumer.Conn.decChan()
+		if consumer.Conn.Conn.IsClosed() {
+			utils.SliceRemove(&_rabbitmqConnPool.recConns, consumer.Conn, 1)
+		} else {
+			consumer.Conn.decChan()
+		}
 	}
 }
 
@@ -72,7 +77,7 @@ func getConsumerChannel() *mqChannel {
 	commonsl := utils.NewCommonSlice(_rabbitmqConnPool.recConns)
 	validConns := commonsl.Filter(func(item interface{}) bool {
 		connModel := item.(*rabbitMqConnData)
-		return *connModel.LiveCh < _chLimitForConn
+		return *connModel.LiveCh < _chLimitForConn && !connModel.Conn.IsClosed()
 	})
 
 	var conn *rabbitMqConnData
@@ -119,7 +124,7 @@ func tryGetPubChannel(maxTry int) (*mqChannel, error) {
 		return getPubChannel()
 	}
 
-	if pubChan, err := getPubChannel(); err != nil || pubChan.Status == _Close {
+	if pubChan, err := getPubChannel(); err != nil || pubChan.Status == _Close || pubChan.Conn.Conn.IsClosed() {
 		return tryGetPubChannel(maxTry - 1)
 	} else {
 		return pubChan, nil
@@ -148,7 +153,7 @@ func pushPubChToPipe() {
 	// 查找空闲通道
 	var idleCh *mqChannel
 	for _, item := range _rabbitmqConnPool.pubChs {
-		if item.Status != _Busy && item.Status != _Close {
+		if item.Status != _Busy && item.Status != _Close && !item.Conn.Conn.IsClosed() {
 			idleCh = item
 			break
 		}
@@ -172,7 +177,7 @@ func pushPubChToPipe() {
 	commonsl := utils.NewCommonSlice(connSlice)
 	validConns := commonsl.Filter(func(item interface{}) bool {
 		connModel := item.(*rabbitMqConnData)
-		return *connModel.LiveCh < _chLimitForConn
+		return *connModel.LiveCh < _chLimitForConn && !connModel.Conn.IsClosed()
 	})
 
 	var conn *rabbitMqConnData
@@ -266,7 +271,13 @@ func clearIdlPubConn() {
 	now := time.Now().UnixNano() / 1000000
 	for i := len(_rabbitmqConnPool.pubChs) - 1; i >= 0; i-- {
 		item := _rabbitmqConnPool.pubChs[i]
-		if item.Status == _Busy {
+		if item.Status == _Busy && !item.Conn.Conn.IsClosed() {
+			continue
+		}
+
+		if item.Conn.Conn.IsClosed() {
+			delete(_rabbitmqConnPool.pubConns, item.Conn.Guid)
+			utils.SliceRemoveByIndex(&_rabbitmqConnPool.pubChs, i)
 			continue
 		}
 

@@ -18,3 +18,8 @@ rabbitmq:
 consul:
   host: 127.0.0.1
   port: 8500
+  secure: false
+  health-check: /service/healthCheck
+  timeout: 5s
+  interval: 10s
+  deregister-critical-service-after: 600s

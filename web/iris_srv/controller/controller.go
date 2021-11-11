@@ -8,4 +8,7 @@ var ApiSlice []ApiController
 type ApiController interface {
 	// 注册路由
 	RegistRoute(irisApp *iris.Application)
+
+	// 路由分组
+	apiParty() string
 }

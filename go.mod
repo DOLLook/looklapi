@@ -11,6 +11,8 @@ require (
 	github.com/gavv/httpexpect v2.0.0+incompatible // indirect
 	github.com/gofrs/uuid v4.1.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/hashicorp/consul v1.10.3 // indirect
+	github.com/hashicorp/consul/api v1.10.0
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/iris-contrib/blackfriday v2.0.0+incompatible // indirect
 	github.com/iris-contrib/middleware/cors v0.0.0-20201012144513-9d3d1026d313
@@ -21,6 +23,7 @@ require (
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.14.2 // indirect
 	github.com/onsi/gomega v1.10.3 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/ryanuber/columnize v2.1.0+incompatible // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
@@ -34,6 +37,5 @@ require (
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	go.mongodb.org/mongo-driver v1.7.3
-	golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )

@@ -33,8 +33,13 @@ var appConfig = struct {
 	} `yaml:"rabbitmq"`
 
 	Consul struct {
-		Host string `yaml:"host"`
-		Port string `yaml:"port"`
+		Host                           string `yaml:"host"`
+		Port                           string `yaml:"port"`
+		Secure                         bool   `yaml:"secure"`
+		HealthCheck                    string `yaml:"health-check"`
+		Timeout                        string `yaml:"timeout"`
+		Interval                       string `yaml:"interval"`
+		DeregisterCriticalServiceAfter string `yaml:"deregister-critical-service-after"`
 	} `yaml:"consul"`
 }{}
 

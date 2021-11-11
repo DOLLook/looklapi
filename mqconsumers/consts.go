@@ -7,5 +7,6 @@ type RabbitMqExchange = string
 type RabbitMqRouteKey = string
 
 const (
-	LOG_LEVEL_CHANGE RabbitMqExchange = "log_level_change" // 日志等级变更交换器
+	LOG_LEVEL_CHANGE       RabbitMqExchange = "log_level_change"       // 日志等级变更交换器
+	MANUAL_SERVICE_REFRESH RabbitMqExchange = "manual_service_refresh" // 手动服务配置刷新交换器
 )

@@ -12,18 +12,15 @@ import (
 var logLevelConsumer = mqutils.NewBroadcastConsumer(LOG_LEVEL_CHANGE, 5)
 
 func init() {
-	logLevelConsumer.Consume = consume
-}
+	// 消费消息
+	logLevelConsumer.Consume = func(msg string) bool {
+		var content int32
+		if err := utils.JsonToStruct(msg, &content); err != nil {
+			mongoutils.Error(err)
+			return false
+		}
 
-// 消费消息
-func consume(msg string) bool {
-	var content int32
-	if err := utils.JsonToStruct(msg, &content); err != nil {
-		mongoutils.Error(err)
-		return false
+		mongoutils.RefreshLogLevel(content)
+		return true
 	}
-
-	mongoutils.RefreshLogLevel(content)
-
-	return false
 }

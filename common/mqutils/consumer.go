@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/streadway/amqp"
 	"go-webapi-fw/common/mongoutils"
+	serviceDiscovery "go-webapi-fw/common/service-discovery"
 	"go-webapi-fw/common/utils"
 )
 
@@ -77,13 +78,6 @@ func bindWorkQueueConsumer(consumer *consumer) {
 	errChan = recChan.Channel.NotifyClose(errChan)
 
 	go func() {
-		//for delivery := range deliverCh {
-		//	if consumer.Parallel && consumer.PrefetchCount > 1 {
-		//		go consume(&delivery, consumer)
-		//	} else {
-		//		consume(&delivery, consumer)
-		//	}
-		//}
 		for {
 			select {
 			case delivery := <-deliverCh:
@@ -145,9 +139,6 @@ func bindBroadcastConsumer(consumer *consumer) {
 	errChan = recChan.Channel.NotifyClose(errChan)
 
 	go func() {
-		//for delivery := range deliverCh {
-		//	consume(&delivery, consumer)
-		//}
 		for {
 			select {
 			case delivery := <-deliverCh:
@@ -255,8 +246,19 @@ func NewBroadcastConsumer(exchange string, maxRetry uint32) *consumer {
 
 // 接收到消息
 func (consumer *consumer) onRecieved(msg string) bool {
+
+	defer func() {
+		if err := recover(); err != nil {
+			if throws, ok := err.(error); ok {
+				mongoutils.Error(throws)
+			}
+		}
+	}()
+
 	if consumer.Type == _WorkQueue {
-		// todo 服务健康检查
+		if serviceDiscovery.GetServiceManager().IsHostCutoff() {
+			return false
+		}
 	}
 
 	if utils.IsEmpty(msg) {
