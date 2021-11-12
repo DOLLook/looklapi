@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/kataras/iris/v12"
-	"go-webapi-fw/common/mongoutils"
+	"go-webapi-fw/common/loggers"
 )
 
 // 统一异常处理
@@ -11,7 +11,7 @@ func ExceptionHandler() iris.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				if throws, ok := err.(error); ok {
-					mongoutils.Error(throws)
+					loggers.GetLogger().Error(throws)
 				}
 
 				if context.IsStopped() {

@@ -3,7 +3,7 @@ package mqutils
 import (
 	"errors"
 	"github.com/streadway/amqp"
-	"go-webapi-fw/common/mongoutils"
+	"go-webapi-fw/common/loggers"
 	serviceDiscovery "go-webapi-fw/common/service-discovery"
 	"go-webapi-fw/common/utils"
 )
@@ -87,7 +87,7 @@ func bindWorkQueueConsumer(consumer *consumer) {
 					consume(&delivery, consumer)
 				}
 			case err := <-errChan:
-				mongoutils.Error(err)
+				loggers.GetLogger().Error(err)
 				removeConsumerChannel(recChan)
 				bindConsumer(consumer)
 				return
@@ -144,7 +144,7 @@ func bindBroadcastConsumer(consumer *consumer) {
 			case delivery := <-deliverCh:
 				consume(&delivery, consumer)
 			case err := <-errChan:
-				mongoutils.Error(err)
+				loggers.GetLogger().Error(err)
 				removeConsumerChannel(recChan)
 				bindConsumer(consumer)
 				return
@@ -161,7 +161,7 @@ func consume(delivery *amqp.Delivery, consumer *consumer) {
 		delivery.Ack(false)
 	} else {
 		if err := delivery.Nack(false, true); err != nil {
-			mongoutils.Error(errors.New("消息Nack失败: " + content))
+			loggers.GetLogger().Error(errors.New("消息Nack失败: " + content))
 		}
 	}
 }
@@ -250,7 +250,7 @@ func (consumer *consumer) onRecieved(msg string) bool {
 	defer func() {
 		if err := recover(); err != nil {
 			if throws, ok := err.(error); ok {
-				mongoutils.Error(throws)
+				loggers.GetLogger().Error(throws)
 			}
 		}
 	}()
@@ -267,7 +267,7 @@ func (consumer *consumer) onRecieved(msg string) bool {
 
 	var metaMsg = &mqMessage{}
 	if err := utils.JsonToStruct(msg, metaMsg); err != nil {
-		mongoutils.Error(err)
+		loggers.GetLogger().Error(err)
 		return false
 	}
 

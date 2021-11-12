@@ -1,7 +1,7 @@
 package mqconsumers
 
 import (
-	"go-webapi-fw/common/mongoutils"
+	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/mqutils"
 	serviceDiscovery "go-webapi-fw/common/service-discovery"
 	"go-webapi-fw/common/utils"
@@ -18,7 +18,7 @@ func init() {
 	manualServiceRefreshConsumer.Consume = func(msg string) bool {
 		var content *modelimpl.ManualService
 		if err := utils.JsonToStruct(msg, &content); err != nil {
-			mongoutils.Error(err)
+			loggers.GetLogger().Error(err)
 			return false
 		}
 

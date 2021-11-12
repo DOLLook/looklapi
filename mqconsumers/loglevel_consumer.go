@@ -1,7 +1,7 @@
 package mqconsumers
 
 import (
-	"go-webapi-fw/common/mongoutils"
+	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/mqutils"
 	"go-webapi-fw/common/utils"
 )
@@ -16,11 +16,11 @@ func init() {
 	logLevelConsumer.Consume = func(msg string) bool {
 		var content int32
 		if err := utils.JsonToStruct(msg, &content); err != nil {
-			mongoutils.Error(err)
+			loggers.GetLogger().Error(err)
 			return false
 		}
 
-		mongoutils.RefreshLogLevel(content)
+		loggers.RefreshLogLevel(content)
 		return true
 	}
 }

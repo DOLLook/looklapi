@@ -5,7 +5,7 @@ import (
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
-	"go-webapi-fw/common/mongoutils"
+	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/redisutils"
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
@@ -61,7 +61,7 @@ func (manager *serviceManager) Init() {
 
 	_, err := manager.updateTask.AddFunc("*/10 * * * * ?", manager.updateHealthServices)
 	if err != nil {
-		mongoutils.Error(err)
+		loggers.GetLogger().Error(err)
 	}
 	manager.updateTask.Start()
 	manager.isReady = true
@@ -88,7 +88,7 @@ func (manager *serviceManager) UpdateManualService(manualService *modelimpl.Manu
 func (manager *serviceManager) updateHealthServices() {
 	hsrv, err := getAllHealthServices()
 	if err != nil {
-		mongoutils.Error(err)
+		loggers.GetLogger().Error(err)
 		return
 	}
 	manager.healthServices = convertServiceModel(hsrv)

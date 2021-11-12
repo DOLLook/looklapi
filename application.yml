@@ -4,7 +4,7 @@ server:
 
 mysql: mysql://192.168.1.112:3306/wxservice?autoReconnect=true&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&useSSL=false
 
-mongodb_uri: mongodb://127.0.0.1:27018,127.0.0.1:27019/test?replicaSet=rs0
+mongodb_uri: mongodb://127.0.0.1:27018,127.0.0.1:27019/hi-nature?replicaSet=rs0
 
 redis:
   host: 127.0.0.1
@@ -23,3 +23,6 @@ consul:
   timeout: 5s
   interval: 10s
   deregister-critical-service-after: 600s
+
+logger:
+  default: mongo

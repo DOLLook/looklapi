@@ -41,6 +41,10 @@ var appConfig = struct {
 		Interval                       string `yaml:"interval"`
 		DeregisterCriticalServiceAfter string `yaml:"deregister-critical-service-after"`
 	} `yaml:"consul"`
+
+	Logger struct {
+		Default string `yaml:"default"`
+	} `yaml:"logger"`
 }{}
 
 func init() {

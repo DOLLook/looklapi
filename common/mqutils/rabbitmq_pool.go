@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/robfig/cron/v3"
 	"github.com/streadway/amqp"
-	"go-webapi-fw/common/mongoutils"
+	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
 	"sort"
@@ -193,7 +193,7 @@ func pushPubChToPipe() {
 		amqpConn, err := amqp.Dial(_rabbitmqConnPool.connStr)
 		if err != nil {
 			atomic.StoreInt32(_rabbitmqConnPool.pubLock, 0)
-			mongoutils.Error(err)
+			loggers.GetLogger().Error(err)
 			_rabbitmqConnPool.pubChPipeline <- nil
 			return
 		}
@@ -216,7 +216,7 @@ func pushPubChToPipe() {
 		channel.Channel = chn
 	} else {
 		atomic.StoreInt32(_rabbitmqConnPool.pubLock, 0)
-		mongoutils.Error(err)
+		loggers.GetLogger().Error(err)
 		_rabbitmqConnPool.pubChPipeline <- nil
 		return
 	}
@@ -231,7 +231,6 @@ func pushPubChToPipe() {
 		select {
 		case <-errChan:
 			channel.Status = _Close
-			//mongoutils.Error(chanErr)
 		}
 	}()
 
@@ -244,7 +243,7 @@ func startTimingTask() {
 	_, err := _idlClearTask.AddFunc("0 */1 * * * ?", clearIdlPubConn)
 
 	if err != nil {
-		mongoutils.Error(err)
+		loggers.GetLogger().Error(err)
 	}
 
 	_idlClearTask.Start()
@@ -299,12 +298,12 @@ func clearIdlPubConn() {
 
 					if item.Status == _Timeout {
 						if closeErr := item.Channel.Close(); closeErr != nil {
-							mongoutils.Error(closeErr)
+							loggers.GetLogger().Error(closeErr)
 						}
 					}
 					if !item.Conn.Conn.IsClosed() {
 						if closeErr := item.Conn.Conn.Close(); closeErr != nil {
-							mongoutils.Error(closeErr)
+							loggers.GetLogger().Error(closeErr)
 						}
 					}
 				}
@@ -315,7 +314,7 @@ func clearIdlPubConn() {
 
 				if item.Status == _Timeout {
 					if closeErr := item.Channel.Close(); closeErr != nil {
-						mongoutils.Error(closeErr)
+						loggers.GetLogger().Error(closeErr)
 					}
 				}
 			}

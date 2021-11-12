@@ -2,6 +2,7 @@ package mqutils
 
 import (
 	"fmt"
+	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/mongoutils"
 	"go-webapi-fw/common/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,7 +22,7 @@ func retry(metaMsg *mqMessage, consumer *consumer) bool {
 	case _Broadcast:
 		return retryBroadcast(metaMsg, consumer.Exchange, consumer.MaxRetry)
 	default:
-		mongoutils.Warn("unvalid consumer type")
+		loggers.GetLogger().Warn("unvalid consumer type")
 		return false
 	}
 }
@@ -58,7 +59,7 @@ func retryWorker(metaMsg *mqMessage, routeKey string, maxRetry uint32) bool {
 		errmsg := fmt.Sprintf("routekey:%s, guid:%s, timespan:%s 超过30分钟未消费",
 			routeKey, mqRetry.Guid, mqRetry.Timestamp.Format("1970-01-01 00:00:00"))
 
-		mongoutils.Warn(errmsg)
+		loggers.GetLogger().Warn(errmsg)
 		return true
 	}
 
@@ -87,7 +88,7 @@ func retryBroadcast(metaMsg *mqMessage, exchange string, maxRetry uint32) bool {
 		errmsg := fmt.Sprintf("exchange:%s, guid:%s, timespan:%s 超过5分钟未消费",
 			exchange, metaMsg.Guid, metaMsg.Timespan.Format("1970-01-01 00:00:00"))
 
-		mongoutils.Warn(errmsg)
+		loggers.GetLogger().Warn(errmsg)
 		return true
 	}
 
@@ -108,7 +109,7 @@ func retryBroadcast(metaMsg *mqMessage, exchange string, maxRetry uint32) bool {
 		result = true
 		errmsg := fmt.Sprintf("消息重试失败, exchange:%s, guid:%s, timespan:%s.",
 			exchange, metaMsg.Guid, metaMsg.Timespan.Format("1970-01-01 00:00:00"))
-		mongoutils.Warn(errmsg)
+		loggers.GetLogger().Warn(errmsg)
 	} else {
 		// 等待两秒入队重试
 		time.Sleep(2000 * time.Millisecond)
@@ -171,7 +172,7 @@ func getRetryCount(guid string, timespan time.Time, isBroadcast bool) int32 {
 		result = msgRetry.CurrentRetry
 	} else {
 		result = utils.MaxInt32
-		mongoutils.Error(err)
+		loggers.GetLogger().Error(err)
 	}
 
 	return result

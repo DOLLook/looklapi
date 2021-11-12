@@ -2,7 +2,7 @@ package mqutils
 
 import (
 	"github.com/streadway/amqp"
-	"go-webapi-fw/common/mongoutils"
+	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/utils"
 )
 
@@ -19,7 +19,7 @@ func PubWorkQueueMsg(routeKey string, msg interface{}) bool {
 
 	jsonMsg := utils.StructToJson(metaMsg)
 	if ok, err := pubWorkQueueMsg(routeKey, jsonMsg); !ok {
-		mongoutils.Error(err)
+		loggers.GetLogger().Error(err)
 		return false
 	}
 
@@ -39,7 +39,7 @@ func PubBroadcastMsg(exchange string, msg interface{}) bool {
 
 	jsonMsg := utils.StructToJson(metaMsg)
 	if ok, err := pubBroadcastMsg(exchange, jsonMsg); !ok {
-		mongoutils.Error(err)
+		loggers.GetLogger().Error(err)
 		return false
 	}
 
