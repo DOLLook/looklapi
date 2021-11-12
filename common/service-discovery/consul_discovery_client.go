@@ -5,6 +5,7 @@ import (
 	consulApi "github.com/hashicorp/consul/api"
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
+	"go-webapi-fw/errs"
 	"strconv"
 	"strings"
 )
@@ -29,14 +30,12 @@ func register() {
 	if consulClient, err := consulApi.NewClient(serviceRegistry.config); err == nil {
 		serviceRegistry.client = consulClient
 	} else {
-		fmt.Println("consul client init failed")
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	// 注册服务到consul
 	if err := serviceRegistry.client.Agent().ServiceRegister(serviceRegistry.registration); err != nil {
-		fmt.Println("consul register failed")
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	fmt.Println("consul register success")

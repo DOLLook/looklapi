@@ -3,6 +3,7 @@ package redisutils
 import (
 	"github.com/garyburd/redigo/redis"
 	"go-webapi-fw/common/utils"
+	"go-webapi-fw/errs"
 	"reflect"
 )
 
@@ -17,7 +18,7 @@ func Set(key string, val interface{}) {
 	_, err := conn.Do("SET", key, val)
 
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 }
 
@@ -27,13 +28,13 @@ func Get(key string, valPtr interface{}) {
 	}
 
 	if valPtr == nil {
-		panic("valPtr must not be nil")
+		panic(errs.NewBllError("valPtr must not be nil"))
 	}
 
 	conn := getConn(key)
 	reply, err := conn.Do("GET", key)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	parse(reply, valPtr)
@@ -49,7 +50,7 @@ func HashSet(key string, hashField interface{}, val interface{}) {
 	conn := getConn(key)
 	_, err := conn.Do("HSET", key, hashField, val)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 }
 
@@ -59,13 +60,13 @@ func HashGet(key string, hashField interface{}, valPtr interface{}) {
 	}
 
 	if valPtr == nil {
-		panic("valPtr must not be nil")
+		panic(errs.NewBllError("valPtr must not be nil"))
 	}
 
 	conn := getConn(key)
 	reply, err := conn.Do("HGET", key, hashField)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	parse(reply, valPtr)
@@ -80,7 +81,7 @@ func Exist(key string) bool {
 	conn := getConn(key)
 	reply, err := conn.Do("EXISTS", key)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	var result bool
@@ -97,7 +98,7 @@ func HExist(key string, hashField interface{}) bool {
 	conn := getConn(key)
 	reply, err := conn.Do("HEXISTS", key, hashField)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	var result bool
@@ -114,7 +115,7 @@ func Del(key string) {
 	conn := getConn(key)
 	_, err := conn.Do("DEL", key)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 }
 
@@ -127,7 +128,7 @@ func HDel(key string, hashField interface{}) {
 	conn := getConn(key)
 	_, err := conn.Do("HDEL", key, hashField)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 }
 
@@ -166,7 +167,7 @@ func parse(reply interface{}, valPtr interface{}) {
 		case nil, redis.Error:
 			break
 		default:
-			panic(parseErr)
+			panic(errs.NewBllError(parseErr.Error()))
 		}
 	}
 

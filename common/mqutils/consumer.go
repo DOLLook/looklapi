@@ -6,6 +6,7 @@ import (
 	"go-webapi-fw/common/loggers"
 	serviceDiscovery "go-webapi-fw/common/service-discovery"
 	"go-webapi-fw/common/utils"
+	"go-webapi-fw/errs"
 )
 
 /**
@@ -27,7 +28,7 @@ func BindConsumer() {
 */
 func bindConsumer(consumer *consumer) {
 	if consumer == nil {
-		panic("invalid nil consumer")
+		panic(errs.NewBllError("invalid nil consumer"))
 	}
 
 	switch consumer.Type {
@@ -49,29 +50,29 @@ consumer 消费者
 */
 func bindWorkQueueConsumer(consumer *consumer) {
 	if consumer == nil {
-		panic("invalid nil consumer")
+		panic(errs.NewBllError("invalid nil consumer"))
 	}
 
 	if consumer.Type != _WorkQueue {
-		panic("invalid consumer type")
+		panic(errs.NewBllError("invalid consumer type"))
 	}
 
 	if consumer.Consume == nil {
-		panic("must bind consume func")
+		panic(errs.NewBllError("must bind consume func"))
 	}
 
 	recChan := getConsumerChannel()
 	if _, err := recChan.Channel.QueueDeclare(consumer.RouteKey, true, false, false, false, nil); err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	if err := recChan.Channel.Qos(int(consumer.PrefetchCount), 0, false); err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	deliverCh, err := recChan.Channel.Consume(consumer.RouteKey, "", false, false, false, false, nil)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	errChan := make(chan *amqp.Error, 1)
@@ -105,34 +106,34 @@ consumer 消费者
 */
 func bindBroadcastConsumer(consumer *consumer) {
 	if consumer == nil {
-		panic("invalid nil consumer")
+		panic(errs.NewBllError("invalid nil consumer"))
 	}
 
 	if consumer.Type != _Broadcast {
-		panic("invalid consumer type")
+		panic(errs.NewBllError("invalid consumer type"))
 	}
 
 	if consumer.Consume == nil {
-		panic("must bind consume func")
+		panic(errs.NewBllError("must bind consume func"))
 	}
 
 	recChan := getConsumerChannel()
 	if err := recChan.Channel.ExchangeDeclare(consumer.Exchange, "fanout", false, true, false, false, nil); err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	queue, err := recChan.Channel.QueueDeclare("", false, true, true, false, nil)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	if err := recChan.Channel.QueueBind(queue.Name, "", consumer.Exchange, false, nil); err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	deliverCh, err := recChan.Channel.Consume(queue.Name, "", false, true, false, false, nil)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	errChan := make(chan *amqp.Error, 1)
@@ -196,19 +197,19 @@ type consumer struct {
 // 新建消费者
 func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uint32, parallel bool, maxRetry uint32) *consumer {
 	if utils.IsEmpty(routeKey) {
-		panic("invalid routekey")
+		panic(errs.NewBllError("invalid routekey"))
 	}
 
 	if concurrency < 1 {
-		panic("workqueue consumer concurrency must greater than 0")
+		panic(errs.NewBllError("workqueue consumer concurrency must greater than 0"))
 	}
 
 	if prefetchCount < 1 {
-		panic("workqueue consumer prefetchCount must greater than 0")
+		panic(errs.NewBllError("workqueue consumer prefetchCount must greater than 0"))
 	}
 
 	if maxRetry < 1 {
-		panic("workqueue consumer maxRetry must greater than 0")
+		panic(errs.NewBllError("workqueue consumer maxRetry must greater than 0"))
 	}
 
 	cs := &consumer{
@@ -227,11 +228,11 @@ func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uin
 // 新建消费者
 func NewBroadcastConsumer(exchange string, maxRetry uint32) *consumer {
 	if utils.IsEmpty(exchange) {
-		panic("invalid exchange")
+		panic(errs.NewBllError("invalid exchange"))
 	}
 
 	if maxRetry < 1 {
-		panic("broadcast consumer maxRetry must greater than 0")
+		panic(errs.NewBllError("broadcast consumer maxRetry must greater than 0"))
 	}
 
 	cs := &consumer{

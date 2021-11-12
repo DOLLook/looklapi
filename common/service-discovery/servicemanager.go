@@ -3,12 +3,12 @@ package service_discovery
 import (
 	"fmt"
 	consulApi "github.com/hashicorp/consul/api"
-	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/redisutils"
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
+	"go-webapi-fw/errs"
 	"go-webapi-fw/model/modelimpl"
 )
 
@@ -117,7 +117,7 @@ func (manager *serviceManager) GetHealthServices(serviceName string) []string {
 		})
 
 		if len(forceHealthy) < 1 {
-			panic(errors.New("找不到服务"))
+			panic(errs.NewBllError("找不到服务"))
 		}
 
 		serviceList = append(serviceList, forceHealthy[0].(modelimpl.ServiceModel).Endpoints...)

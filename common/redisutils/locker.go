@@ -2,6 +2,7 @@ package redisutils
 
 import (
 	"github.com/garyburd/redigo/redis"
+	"go-webapi-fw/errs"
 	"time"
 )
 
@@ -48,7 +49,7 @@ func lock(lockName string, holdSecs int32) (bool, int64) {
 	reply, err := script.Do(conn, lockName, timeStamp, holdSecs)
 
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	var result bool
@@ -66,7 +67,7 @@ func UnLock(lockName string, timeStamp int64) {
 	conn := getConn0(0)
 	_, err := script.Do(conn, lockName, timeStamp)
 	if err != nil {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 }
 

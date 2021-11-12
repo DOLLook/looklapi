@@ -7,6 +7,7 @@ import (
 	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
+	"go-webapi-fw/errs"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -84,12 +85,12 @@ func getConsumerChannel() *mqChannel {
 
 	if validConns == nil || len(validConns) < 1 {
 		if len(_rabbitmqConnPool.recConns) >= _connLimt {
-			panic("连接池已满")
+			panic(errs.NewBllError("连接池已满"))
 		}
 
 		amqpConn, err := amqp.Dial(_rabbitmqConnPool.connStr)
 		if err != nil {
-			panic(err)
+			panic(errs.NewBllError(err.Error()))
 		}
 
 		conn = newRabbitMQConn(amqpConn)
@@ -109,7 +110,7 @@ func getConsumerChannel() *mqChannel {
 	if chn, err := conn.Conn.Channel(); err == nil {
 		channel.Channel = chn
 	} else {
-		panic(err)
+		panic(errs.NewBllError(err.Error()))
 	}
 
 	return channel
