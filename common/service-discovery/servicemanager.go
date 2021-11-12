@@ -46,6 +46,8 @@ func (manager *serviceManager) Init() {
 		return
 	}
 
+	register()
+
 	manualService := &modelimpl.ManualService{}
 	redisutils.Get(redisutils.CONFIG_MANUAL_SERVICE, manualService)
 

@@ -21,7 +21,7 @@ var serviceRegistry *consulServiceRegistry
 /**
 注册服务
 */
-func Register() {
+func register() {
 	serviceRegistry = new(consulServiceRegistry)
 	serviceRegistry.registration = generateAgentServiceRegistration()
 	serviceRegistry.config = generateConsulConfig()
