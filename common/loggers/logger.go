@@ -1,10 +1,8 @@
 package loggers
 
 import (
-	"go-webapi-fw/common/redisutils"
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
-	"go-webapi-fw/model/modelimpl"
 	"runtime"
 	"strings"
 )
@@ -22,11 +20,10 @@ type Logger interface {
 	// 错误日志
 	Error(err error)
 
-	// 通知日志等级刷新
-	notifyLoglevel(level logLevel)
-
 	// 名称
 	name() string
+
+	setLogger()
 }
 
 // 日志等级别名
@@ -56,8 +53,6 @@ func setLogger(logger Logger) {
 		return
 	}
 
-	appendLogLevel(logger)
-
 	_loggers = append(_loggers, logger)
 
 	if logger.name() == appConfig.AppConfig.Logger.Default {
@@ -69,13 +64,6 @@ func setLogger(logger Logger) {
 	}
 }
 
-// 更新日志等级
-func RefreshLogLevel(level int32) {
-	for _, logger := range _loggers {
-		logger.notifyLoglevel(logLevel(level))
-	}
-}
-
 // 获取logger
 func GetLogger() Logger {
 	return _defaultLogger
@@ -84,20 +72,6 @@ func GetLogger() Logger {
 // 获取内置looger
 func GetBuildinLogger() Logger {
 	return _buildinLogger
-}
-
-func appendLogLevel(logger Logger) {
-	if _level > _OFF {
-		logger.notifyLoglevel(_level)
-		return
-	}
-
-	configLog := &modelimpl.ConfigLog{}
-	if err := redisutils.Get(redisutils.CONFIG_LOG, configLog); err != nil {
-		configLog.LogLevel = int8(_INFO)
-	}
-	_level = logLevel(configLog.LogLevel)
-	logger.notifyLoglevel(_level)
 }
 
 //func getTrace(){

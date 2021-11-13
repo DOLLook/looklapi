@@ -2,11 +2,14 @@ package loggers
 
 import (
 	"fmt"
+	"go-webapi-fw/common/appcontext"
 	"go-webapi-fw/common/mongoutils"
 	"go-webapi-fw/common/utils"
 	"go-webapi-fw/config"
 	"go-webapi-fw/errs"
+	"go-webapi-fw/model/modelimpl"
 	"go-webapi-fw/model/mongo"
+	"reflect"
 	"strings"
 )
 
@@ -15,16 +18,32 @@ type mongoLoger struct {
 }
 
 func init() {
-	var logger interface{} = &mongoLoger{}
-	setLogger(logger.(Logger))
+	//var logger interface{} = &mongoLoger{}
+	var logger = &mongoLoger{logLevel: _INFO}
+	logger.setLogger()
+	logger.Subscribe()
 }
 
 func (logger *mongoLoger) name() string {
 	return "mongo"
 }
 
-func (logger *mongoLoger) notifyLoglevel(level logLevel) {
-	logger.logLevel = level
+func (logger *mongoLoger) setLogger() {
+	setLogger(logger)
+}
+
+// recieved app event and process.
+// for event publish well, the developers must deal with the panic by their self
+func (logger *mongoLoger) OnApplicationEvent(event interface{}) {
+	if event, ok := event.(*modelimpl.ConfigLog); ok {
+		logger.logLevel = logLevel(event.LogLevel)
+	}
+}
+
+// regiser to the application event publisher
+// @eventType the event type which the observer intrested in
+func (logger *mongoLoger) Subscribe() {
+	appcontext.GetAppEventPublisher().Subscribe(logger, reflect.TypeOf(&modelimpl.ConfigLog{}))
 }
 
 // 调试日志

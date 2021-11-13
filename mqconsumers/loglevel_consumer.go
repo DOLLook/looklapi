@@ -1,9 +1,11 @@
 package mqconsumers
 
 import (
+	"go-webapi-fw/common/appcontext"
 	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/mqutils"
 	"go-webapi-fw/common/utils"
+	"go-webapi-fw/model/modelimpl"
 )
 
 /**
@@ -20,7 +22,8 @@ func init() {
 			return false
 		}
 
-		loggers.RefreshLogLevel(content)
+		logConfig := &modelimpl.ConfigLog{LogLevel: int8(content)}
+		appcontext.GetAppEventPublisher().PublishEvent(logConfig)
 		return true
 	}
 }

@@ -2,9 +2,12 @@ package loggers
 
 import (
 	"fmt"
+	"go-webapi-fw/common/appcontext"
 	"go-webapi-fw/common/utils"
 	"go-webapi-fw/errs"
+	"go-webapi-fw/model/modelimpl"
 	"log"
+	"reflect"
 	"strings"
 )
 
@@ -13,16 +16,32 @@ type buildinLogger struct {
 }
 
 func init() {
-	var logger interface{} = &buildinLogger{}
-	setLogger(logger.(Logger))
+	//var logger interface{} = &buildinLogger{}
+	var logger = &buildinLogger{logLevel: _INFO}
+	logger.setLogger()
+	logger.Subscribe()
 }
 
 func (logger *buildinLogger) name() string {
 	return "buildin"
 }
 
-func (logger *buildinLogger) notifyLoglevel(level logLevel) {
-	logger.logLevel = level
+func (logger *buildinLogger) setLogger() {
+	setLogger(logger)
+}
+
+// recieved app event and process.
+// for event publish well, the developers must deal with the panic by their self
+func (logger *buildinLogger) OnApplicationEvent(event interface{}) {
+	if event, ok := event.(*modelimpl.ConfigLog); ok {
+		logger.logLevel = logLevel(event.LogLevel)
+	}
+}
+
+// regiser to the application event publisher
+// @eventType the event type which the observer intrested in
+func (logger *buildinLogger) Subscribe() {
+	appcontext.GetAppEventPublisher().Subscribe(logger, reflect.TypeOf(&modelimpl.ConfigLog{}))
 }
 
 // 调试日志
