@@ -6,20 +6,25 @@ import (
 )
 
 // 加锁执行, 执行完成自动释放锁
-func LockAction(action func(), lockName string, timeoutSecs int32) {
-	if ok, timeStamp := TryLock(lockName, timeoutSecs); ok {
+func LockAction(action func() error, lockName string, timeoutSecs int32) (bool, error) {
+	if ok, timeStamp, err := TryLock(lockName, timeoutSecs); ok {
 		defer UnLock(lockName, timeStamp)
-		action()
+		return ok, action()
+	} else {
+		return false, err
 	}
 }
 
 // 加锁
-func TryLock(lockName string, timeoutSecs int32) (bool, int64) {
+func TryLock(lockName string, timeoutSecs int32) (bool, int64, error) {
 	begin := time.Now().UnixNano()
 	for {
-		result, timeStamp := lock(lockName, 30)
+		result, timeStamp, err := lock(lockName, 30)
+		if err != nil {
+			return false, 0, err
+		}
 		if result {
-			return true, timeStamp
+			return true, timeStamp, nil
 		}
 
 		time.Sleep(1 * time.Millisecond)
@@ -29,11 +34,11 @@ func TryLock(lockName string, timeoutSecs int32) (bool, int64) {
 		}
 	}
 
-	return false, 0
+	return false, 0, nil
 }
 
 // 加锁
-func lock(lockName string, holdSecs int32) (bool, int64) {
+func lock(lockName string, holdSecs int32) (bool, int64, error) {
 	lockName = getLockName(lockName)
 
 	scriptStr := `if redis.call('EXISTS',KEYS[1])==0 then
@@ -48,18 +53,18 @@ func lock(lockName string, holdSecs int32) (bool, int64) {
 	reply, err := script.Do(conn, lockName, timeStamp, holdSecs)
 
 	if err != nil {
-		return false, 0
+		return false, 0, err
 	}
 
 	var result bool
 	if err := parse(reply, &result); err != nil {
-		return false, 0
+		return false, 0, err
 	}
-	return result, timeStamp
+	return result, timeStamp, nil
 }
 
 // 解锁
-func UnLock(lockName string, timeStamp int64) {
+func UnLock(lockName string, timeStamp int64) error {
 	lockName = getLockName(lockName)
 
 	scriptStr := `if redis.call('GET',KEYS[1])==ARGV[1] then return redis.call('DEL',KEYS[1]) else return 0 end`
@@ -67,9 +72,7 @@ func UnLock(lockName string, timeStamp int64) {
 	script := redis.NewScript(1, scriptStr)
 	conn := getConn0(0)
 	_, err := script.Do(conn, lockName, timeStamp)
-	if err != nil {
-		//loggers.GetLogger().Error(errors.New(err.Error() + scriptStr))
-	}
+	return err
 }
 
 // 获取真实锁名称
