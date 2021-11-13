@@ -7,7 +7,6 @@ import (
 	"go-webapi-fw/config"
 	"go-webapi-fw/errs"
 	"go-webapi-fw/model/mongo"
-	"runtime"
 	"strings"
 )
 
@@ -127,40 +126,11 @@ func (logger *mongoLoger) Error(err error) {
 			}
 		}
 		log.Stacktrace = strings.Join(trace, "\n")
+	} else {
+		methodName, fullFileName, fileName, lineNum := getTrace()
+		log.ClassName = fileName
+		log.Stacktrace = fmt.Sprintf("%s\n\t%s:%d", methodName, fullFileName, lineNum)
 	}
 
 	go mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log)
-}
-
-//func getTrace(){
-//stackStr := string(debug.Stack())
-//stackSlice := strings.Split(stackStr, "\n")
-//if level == _ERROR || level == _FATAL {
-//	var temp []string
-//	temp = append(temp, stackSlice[0])
-//	temp = append(temp, stackSlice[7:]...)
-//	log.Stacktrace = strings.Join(temp, "\n")
-//}
-//
-//if routineId, err := strconv.Atoi(strings.Split(stackSlice[0], " ")[1]); err == nil {
-//	log.ThreadId = int32(routineId)
-//}
-//}
-
-func getTrace() (methodName string, fullFileName string, fileName string, lineNum int) {
-	methodName, fullFileName, fileName = "", "", ""
-	lineNum = 0
-	pc, fullFileName, lineNum, ok := runtime.Caller(2)
-	if ok {
-		methodName = runtime.FuncForPC(pc).Name()
-	}
-	fullFileName = strings.TrimSpace(fullFileName)
-	if len(fullFileName) > 0 {
-		indexNum := strings.Index(fullFileName, "/src/")
-		fullFileName = fullFileName[indexNum+4:]
-		temp := strings.Split(fullFileName, "/")
-		fileName = temp[len(temp)-1]
-	}
-
-	return
 }

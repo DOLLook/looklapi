@@ -1,15 +1,15 @@
 package redisutils
 
 import (
+	"errors"
 	"github.com/garyburd/redigo/redis"
 	"go-webapi-fw/common/utils"
-	"go-webapi-fw/errs"
 	"reflect"
 )
 
-func Set(key string, val interface{}) {
+func Set(key string, val interface{}) error {
 	if utils.IsEmpty(key) || val == nil {
-		return
+		return errors.New("invalid arguments")
 	}
 
 	val = objConvertToJson(val)
@@ -17,164 +17,180 @@ func Set(key string, val interface{}) {
 	conn := getConn(key)
 	_, err := conn.Do("SET", key, val)
 
-	if err != nil {
-		panic(errs.NewBllError(err.Error()))
-	}
+	return err
 }
 
-func Get(key string, valPtr interface{}) {
+func Get(key string, valPtr interface{}) error {
 	if utils.IsEmpty(key) {
-		return
+		return errors.New("invalid key")
 	}
 
 	if valPtr == nil {
-		panic(errs.NewBllError("valPtr must not be nil"))
+		return errors.New("valPtr must not be nil")
 	}
 
 	conn := getConn(key)
 	reply, err := conn.Do("GET", key)
 	if err != nil {
-		panic(errs.NewBllError(err.Error()))
+		return err
 	}
 
-	parse(reply, valPtr)
+	return parse(reply, valPtr)
 }
 
-func HashSet(key string, hashField interface{}, val interface{}) {
+func HashSet(key string, hashField interface{}, val interface{}) error {
 	if utils.IsEmpty(key) || hashField == nil || val == nil {
-		return
+		return errors.New("invalid arguments")
 	}
 
 	val = objConvertToJson(val)
 
 	conn := getConn(key)
 	_, err := conn.Do("HSET", key, hashField, val)
-	if err != nil {
-		panic(errs.NewBllError(err.Error()))
-	}
+	return err
 }
 
-func HashGet(key string, hashField interface{}, valPtr interface{}) {
+func HashGet(key string, hashField interface{}, valPtr interface{}) error {
 	if utils.IsEmpty(key) || hashField == nil {
-		return
+		return errors.New("invalid key or hashField")
 	}
 
 	if valPtr == nil {
-		panic(errs.NewBllError("valPtr must not be nil"))
+		return errors.New("valPtr must not be nil")
 	}
 
 	conn := getConn(key)
 	reply, err := conn.Do("HGET", key, hashField)
 	if err != nil {
-		panic(errs.NewBllError(err.Error()))
+		return err
 	}
 
-	parse(reply, valPtr)
+	return parse(reply, valPtr)
 }
 
 // 判断key是否存在
-func Exist(key string) bool {
+func Exist(key string) (bool, error) {
 	if utils.IsEmpty(key) {
-		return false
+		return false, nil
 	}
 
 	conn := getConn(key)
 	reply, err := conn.Do("EXISTS", key)
 	if err != nil {
-		panic(errs.NewBllError(err.Error()))
+		return false, err
 	}
 
 	var result bool
-	parse(reply, &result)
-	return result
+	if err := parse(reply, &result); err != nil {
+		return false, err
+	}
+	return result, nil
 }
 
 // hash是否存在
-func HExist(key string, hashField interface{}) bool {
+func HExist(key string, hashField interface{}) (bool, error) {
 	if utils.IsEmpty(key) || hashField == nil {
-		return false
+		return false, nil
 	}
 
 	conn := getConn(key)
 	reply, err := conn.Do("HEXISTS", key, hashField)
 	if err != nil {
-		panic(errs.NewBllError(err.Error()))
+		return false, err
 	}
 
 	var result bool
-	parse(reply, &result)
-	return result
+	if err := parse(reply, &result); err != nil {
+		return false, err
+	}
+	return result, nil
 }
 
 // 删除key
-func Del(key string) {
+func Del(key string) error {
 	if utils.IsEmpty(key) {
-		return
+		return nil
 	}
 
 	conn := getConn(key)
 	_, err := conn.Do("DEL", key)
-	if err != nil {
-		panic(errs.NewBllError(err.Error()))
-	}
+	return err
 }
 
 // 删除key
-func HDel(key string, hashField interface{}) {
+func HDel(key string, hashField interface{}) error {
 	if utils.IsEmpty(key) || hashField == nil {
-		return
+		return nil
 	}
 
 	conn := getConn(key)
 	_, err := conn.Do("HDEL", key, hashField)
-	if err != nil {
-		panic(errs.NewBllError(err.Error()))
-	}
+	return err
 }
 
-func parse(reply interface{}, valPtr interface{}) {
-	objVale := reflect.ValueOf(valPtr).Elem()
-	var valueInterface interface{}
-	var parseErr error
-	switch objVale.Kind() {
-	case reflect.Bool:
-		valueInterface, parseErr = redis.Bool(reply, nil)
-		break
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32:
-		valueInterface, parseErr = redis.Int(reply, nil)
-		break
-	case reflect.Int64:
-		valueInterface, parseErr = redis.Int64(reply, nil)
-		break
-	case reflect.Uint64:
-		valueInterface, parseErr = redis.Uint64(reply, nil)
-		break
-	case reflect.Float32, reflect.Float64:
-		valueInterface, parseErr = redis.Float64(reply, nil)
-		break
-	case reflect.String:
-		valueInterface, parseErr = redis.String(reply, nil)
-		break
-	default:
-		bytes := reply.([]byte)
-		valStr := string(bytes)
-		parseErr = utils.JsonToStruct(valStr, valPtr)
-		break
+func parse(reply interface{}, valPtr interface{}) (err error) {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			switch rcvErr := rcvErr.(type) {
+			case error:
+				err = rcvErr
+			case string:
+				err = errors.New(rcvErr)
+			default:
+				err = errors.New("unknow err")
+			}
+		}
+	}()
+
+	switch reply := reply.(type) {
+	case redis.Error:
+		err = reply
+	case nil:
+		err = redis.ErrNil
+	}
+	if err != nil {
+		return
 	}
 
-	if parseErr != nil {
-		switch reply.(type) {
-		case nil, redis.Error:
-			break
-		default:
-			panic(errs.NewBllError(parseErr.Error()))
+	objVale := reflect.ValueOf(valPtr).Elem()
+	var valueInterface interface{}
+	switch objVale.Kind() {
+	case reflect.Bool:
+		valueInterface, err = redis.Bool(reply, nil)
+		break
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32:
+		valueInterface, err = redis.Int(reply, nil)
+		break
+	case reflect.Int64:
+		valueInterface, err = redis.Int64(reply, nil)
+		break
+	case reflect.Uint64:
+		valueInterface, err = redis.Uint64(reply, nil)
+		break
+	case reflect.Float32, reflect.Float64:
+		valueInterface, err = redis.Float64(reply, nil)
+		break
+	case reflect.String:
+		valueInterface, err = redis.String(reply, nil)
+		break
+	default:
+		if bytes, ok := reply.([]byte); ok {
+			valStr := string(bytes)
+			err = utils.JsonToStruct(valStr, valPtr)
+		} else {
+			err = errors.New("invalid reply type")
 		}
+	}
+
+	if err != nil {
+		return
 	}
 
 	if valueInterface != nil {
 		resultValue := reflect.ValueOf(valueInterface)
 		objVale.Set(resultValue)
 	}
+	return
 }
 
 // 对象转json

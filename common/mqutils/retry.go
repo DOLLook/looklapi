@@ -142,6 +142,8 @@ func retrySuccess(metaMsg *mqMessage, csType consumerType) {
 
 	if result, err := mongoutils.GetCollection(_RetryCollectionName).UpdateOne(nil, filter, updates); err == nil {
 		fmt.Println(result)
+	} else {
+		loggers.GetLogger().Error(err)
 	}
 }
 

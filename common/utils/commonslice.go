@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"go-webapi-fw/errs"
 	"reflect"
 )
 
@@ -15,7 +14,7 @@ func NewCommonSlice(slice interface{}) commonSlice {
 
 	sval := reflect.ValueOf(slice)
 	if sval.Kind() != reflect.Slice {
-		panic(errs.NewBllError("unvalid slice"))
+		return nil
 	}
 
 	slen := sval.Len()

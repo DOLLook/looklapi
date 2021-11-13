@@ -7,7 +7,6 @@ import (
 	"go-webapi-fw/common/loggers"
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
-	"go-webapi-fw/errs"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -74,7 +73,7 @@ func removeConsumerChannel(consumer *mqChannel) {
 }
 
 // 获取消费者通道
-func getConsumerChannel() *mqChannel {
+func getConsumerChannel() (*mqChannel, error) {
 	commonsl := utils.NewCommonSlice(_rabbitmqConnPool.recConns)
 	validConns := commonsl.Filter(func(item interface{}) bool {
 		connModel := item.(*rabbitMqConnData)
@@ -85,12 +84,12 @@ func getConsumerChannel() *mqChannel {
 
 	if validConns == nil || len(validConns) < 1 {
 		if len(_rabbitmqConnPool.recConns) >= _connLimt {
-			panic(errs.NewBllError("连接池已满"))
+			return nil, errors.New("连接池已满")
 		}
 
 		amqpConn, err := amqp.Dial(_rabbitmqConnPool.connStr)
 		if err != nil {
-			panic(errs.NewBllError(err.Error()))
+			return nil, err
 		}
 
 		conn = newRabbitMQConn(amqpConn)
@@ -110,10 +109,10 @@ func getConsumerChannel() *mqChannel {
 	if chn, err := conn.Conn.Channel(); err == nil {
 		channel.Channel = chn
 	} else {
-		panic(errs.NewBllError(err.Error()))
+		return nil, err
 	}
 
-	return channel
+	return channel, nil
 }
 
 /**
@@ -144,6 +143,8 @@ func getPubChannel() (*mqChannel, error) {
 
 // 向管道推送发布channel
 func pushPubChToPipe() {
+	defer loggers.RecoverLog()
+
 	for {
 		if atomic.CompareAndSwapInt32(_rabbitmqConnPool.pubLock, 0, 1) {
 			break
@@ -252,6 +253,8 @@ func startTimingTask() {
 
 // 清理空闲发布连接
 func clearIdlPubConn() {
+	defer loggers.RecoverLog()
+
 	holdLock := false
 	for i := 0; i < 3; i++ {
 		if atomic.CompareAndSwapInt32(_rabbitmqConnPool.pubLock, 0, 1) {

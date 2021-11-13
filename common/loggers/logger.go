@@ -5,6 +5,8 @@ import (
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
 	"go-webapi-fw/model/modelimpl"
+	"runtime"
+	"strings"
 )
 
 type Logger interface {
@@ -44,6 +46,7 @@ const (
 var _level = _OFF
 var _loggers []Logger     // logger容器
 var _defaultLogger Logger // 默认logger
+var _buildinLogger Logger // 内置logger
 
 func setLogger(logger Logger) {
 	if logger == nil {
@@ -60,6 +63,10 @@ func setLogger(logger Logger) {
 	if logger.name() == appConfig.AppConfig.Logger.Default {
 		_defaultLogger = logger
 	}
+
+	if logger.name() == "buildin" {
+		_buildinLogger = logger
+	}
 }
 
 // 更新日志等级
@@ -74,6 +81,11 @@ func GetLogger() Logger {
 	return _defaultLogger
 }
 
+// 获取内置looger
+func GetBuildinLogger() Logger {
+	return _buildinLogger
+}
+
 func appendLogLevel(logger Logger) {
 	if _level > _OFF {
 		logger.notifyLoglevel(_level)
@@ -81,7 +93,59 @@ func appendLogLevel(logger Logger) {
 	}
 
 	configLog := &modelimpl.ConfigLog{}
-	redisutils.Get(redisutils.CONFIG_LOG, configLog)
+	if err := redisutils.Get(redisutils.CONFIG_LOG, configLog); err != nil {
+		configLog.LogLevel = int8(_INFO)
+	}
 	_level = logLevel(configLog.LogLevel)
 	logger.notifyLoglevel(_level)
+}
+
+//func getTrace(){
+//stackStr := string(debug.Stack())
+//stackSlice := strings.Split(stackStr, "\n")
+//if level == _ERROR || level == _FATAL {
+//	var temp []string
+//	temp = append(temp, stackSlice[0])
+//	temp = append(temp, stackSlice[7:]...)
+//	log.Stacktrace = strings.Join(temp, "\n")
+//}
+//
+//if routineId, err := strconv.Atoi(strings.Split(stackSlice[0], " ")[1]); err == nil {
+//	log.ThreadId = int32(routineId)
+//}
+//}
+
+func getTrace() (methodName string, fullFileName string, fileName string, lineNum int) {
+	methodName, fullFileName, fileName = "", "", ""
+	lineNum = 0
+	pc, fullFileName, lineNum, ok := runtime.Caller(2)
+	if ok {
+		methodName = runtime.FuncForPC(pc).Name()
+	}
+	fullFileName = strings.TrimSpace(fullFileName)
+	if len(fullFileName) > 0 {
+		indexNum := strings.Index(fullFileName, "/src/")
+		fullFileName = fullFileName[indexNum+4:]
+		temp := strings.Split(fullFileName, "/")
+		fileName = temp[len(temp)-1]
+	}
+
+	return
+}
+
+func levelName(level logLevel) string {
+	switch level {
+	case _DEBUG:
+		return "DEBUG"
+	case _INFO:
+		return "INFO"
+	case _WARN:
+		return "WARN"
+	case _ERROR:
+		return "ERROR"
+	case _FATAL:
+		return "FATAL"
+	default:
+		return ""
+	}
 }

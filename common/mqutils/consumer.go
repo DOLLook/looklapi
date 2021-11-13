@@ -13,6 +13,8 @@ import (
 绑定消费者
 */
 func BindConsumer() {
+	defer loggers.RecoverLog()
+
 	if _hasConsumerBind || _consumerContainer == nil || len(_consumerContainer) < 1 {
 		return
 	}
@@ -28,7 +30,8 @@ func BindConsumer() {
 */
 func bindConsumer(consumer *consumer) {
 	if consumer == nil {
-		panic(errs.NewBllError("invalid nil consumer"))
+		loggers.GetLogger().Error(errors.New("invalid nil consumer"))
+		return
 	}
 
 	switch consumer.Type {
@@ -50,35 +53,47 @@ consumer 消费者
 */
 func bindWorkQueueConsumer(consumer *consumer) {
 	if consumer == nil {
-		panic(errs.NewBllError("invalid nil consumer"))
+		loggers.GetLogger().Error(errors.New("invalid nil consumer"))
+		return
 	}
 
 	if consumer.Type != _WorkQueue {
-		panic(errs.NewBllError("invalid consumer type"))
+		loggers.GetLogger().Error(errors.New("invalid consumer type"))
+		return
 	}
 
 	if consumer.Consume == nil {
-		panic(errs.NewBllError("must bind consume func"))
+		loggers.GetLogger().Error(errors.New("must bind consume func"))
+		return
 	}
 
-	recChan := getConsumerChannel()
+	recChan, err := getConsumerChannel()
+	if err != nil {
+		loggers.GetLogger().Error(err)
+		return
+	}
+
 	if _, err := recChan.Channel.QueueDeclare(consumer.RouteKey, true, false, false, false, nil); err != nil {
-		panic(errs.NewBllError(err.Error()))
+		loggers.GetLogger().Error(err)
+		return
 	}
 
 	if err := recChan.Channel.Qos(int(consumer.PrefetchCount), 0, false); err != nil {
-		panic(errs.NewBllError(err.Error()))
+		loggers.GetLogger().Error(err)
+		return
 	}
 
 	deliverCh, err := recChan.Channel.Consume(consumer.RouteKey, "", false, false, false, false, nil)
 	if err != nil {
-		panic(errs.NewBllError(err.Error()))
+		loggers.GetLogger().Error(err)
+		return
 	}
 
 	errChan := make(chan *amqp.Error, 1)
 	errChan = recChan.Channel.NotifyClose(errChan)
 
 	go func() {
+		defer loggers.RecoverLog()
 		for {
 			select {
 			case delivery := <-deliverCh:
@@ -106,40 +121,52 @@ consumer 消费者
 */
 func bindBroadcastConsumer(consumer *consumer) {
 	if consumer == nil {
-		panic(errs.NewBllError("invalid nil consumer"))
+		loggers.GetLogger().Error(errors.New("invalid nil consumer"))
+		return
 	}
 
 	if consumer.Type != _Broadcast {
-		panic(errs.NewBllError("invalid consumer type"))
+		loggers.GetLogger().Error(errors.New("invalid consumer type"))
+		return
 	}
 
 	if consumer.Consume == nil {
-		panic(errs.NewBllError("must bind consume func"))
+		loggers.GetLogger().Error(errors.New("must bind consume func"))
+		return
 	}
 
-	recChan := getConsumerChannel()
+	recChan, err := getConsumerChannel()
+	if err != nil {
+		loggers.GetLogger().Error(err)
+		return
+	}
 	if err := recChan.Channel.ExchangeDeclare(consumer.Exchange, "fanout", false, true, false, false, nil); err != nil {
-		panic(errs.NewBllError(err.Error()))
+		loggers.GetLogger().Error(err)
+		return
 	}
 
 	queue, err := recChan.Channel.QueueDeclare("", false, true, true, false, nil)
 	if err != nil {
-		panic(errs.NewBllError(err.Error()))
+		loggers.GetLogger().Error(err)
+		return
 	}
 
 	if err := recChan.Channel.QueueBind(queue.Name, "", consumer.Exchange, false, nil); err != nil {
-		panic(errs.NewBllError(err.Error()))
+		loggers.GetLogger().Error(err)
+		return
 	}
 
 	deliverCh, err := recChan.Channel.Consume(queue.Name, "", false, true, false, false, nil)
 	if err != nil {
-		panic(errs.NewBllError(err.Error()))
+		loggers.GetLogger().Error(err)
+		return
 	}
 
 	errChan := make(chan *amqp.Error, 1)
 	errChan = recChan.Channel.NotifyClose(errChan)
 
 	go func() {
+		defer loggers.RecoverLog()
 		for {
 			select {
 			case delivery := <-deliverCh:
@@ -197,19 +224,27 @@ type consumer struct {
 // 新建消费者
 func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uint32, parallel bool, maxRetry uint32) *consumer {
 	if utils.IsEmpty(routeKey) {
-		panic(errs.NewBllError("invalid routekey"))
+		err := errs.NewBllError("invalid routekey")
+		loggers.GetBuildinLogger().Error(err)
+		panic(err)
 	}
 
 	if concurrency < 1 {
-		panic(errs.NewBllError("workqueue consumer concurrency must greater than 0"))
+		err := errs.NewBllError("workqueue consumer concurrency must greater than 0")
+		loggers.GetBuildinLogger().Error(err)
+		panic(err)
 	}
 
 	if prefetchCount < 1 {
-		panic(errs.NewBllError("workqueue consumer prefetchCount must greater than 0"))
+		err := errs.NewBllError("workqueue consumer prefetchCount must greater than 0")
+		loggers.GetBuildinLogger().Error(err)
+		panic(err)
 	}
 
 	if maxRetry < 1 {
-		panic(errs.NewBllError("workqueue consumer maxRetry must greater than 0"))
+		err := errs.NewBllError("workqueue consumer maxRetry must greater than 0")
+		loggers.GetBuildinLogger().Error(err)
+		panic(err)
 	}
 
 	cs := &consumer{
@@ -228,11 +263,15 @@ func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uin
 // 新建消费者
 func NewBroadcastConsumer(exchange string, maxRetry uint32) *consumer {
 	if utils.IsEmpty(exchange) {
-		panic(errs.NewBllError("invalid exchange"))
+		err := errs.NewBllError("invalid exchange")
+		loggers.GetBuildinLogger().Error(err)
+		panic(err)
 	}
 
 	if maxRetry < 1 {
-		panic(errs.NewBllError("broadcast consumer maxRetry must greater than 0"))
+		err := errs.NewBllError("broadcast consumer maxRetry must greater than 0")
+		loggers.GetBuildinLogger().Error(err)
+		panic(err)
 	}
 
 	cs := &consumer{
@@ -247,14 +286,7 @@ func NewBroadcastConsumer(exchange string, maxRetry uint32) *consumer {
 
 // 接收到消息
 func (consumer *consumer) onRecieved(msg string) bool {
-
-	defer func() {
-		if err := recover(); err != nil {
-			if throws, ok := err.(error); ok {
-				loggers.GetLogger().Error(throws)
-			}
-		}
-	}()
+	defer loggers.RecoverLog()
 
 	if consumer.Type == _WorkQueue {
 		if serviceDiscovery.GetServiceManager().IsHostCutoff() {

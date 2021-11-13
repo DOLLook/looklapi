@@ -8,7 +8,6 @@ import (
 	"go-webapi-fw/common/redisutils"
 	"go-webapi-fw/common/utils"
 	appConfig "go-webapi-fw/config"
-	"go-webapi-fw/errs"
 	"go-webapi-fw/model/modelimpl"
 )
 
@@ -49,14 +48,16 @@ func (manager *serviceManager) Init() {
 	register()
 
 	manualService := &modelimpl.ManualService{}
-	redisutils.Get(redisutils.CONFIG_MANUAL_SERVICE, manualService)
+	if err := redisutils.Get(redisutils.CONFIG_MANUAL_SERVICE, manualService); err == nil {
+		if !utils.CollectionIsEmpty(manualService.Cutoff) {
+			manager.cutoffCache = append(svManager.cutoffCache, manualService.Cutoff...)
+		}
 
-	if !utils.CollectionIsEmpty(manualService.Cutoff) {
-		manager.cutoffCache = append(svManager.cutoffCache, manualService.Cutoff...)
-	}
-
-	if !utils.CollectionIsEmpty(manualService.Healthy) {
-		manager.forceHealthyCache = append(svManager.forceHealthyCache, manualService.Healthy...)
+		if !utils.CollectionIsEmpty(manualService.Healthy) {
+			manager.forceHealthyCache = append(svManager.forceHealthyCache, manualService.Healthy...)
+		}
+	} else {
+		loggers.GetLogger().Error(err)
 	}
 
 	_, err := manager.updateTask.AddFunc("*/10 * * * * ?", manager.updateHealthServices)
@@ -86,6 +87,8 @@ func (manager *serviceManager) UpdateManualService(manualService *modelimpl.Manu
 更新服务自动发现健康服务
 */
 func (manager *serviceManager) updateHealthServices() {
+	defer loggers.RecoverLog()
+
 	hsrv, err := getAllHealthServices()
 	if err != nil {
 		loggers.GetLogger().Error(err)
@@ -117,7 +120,7 @@ func (manager *serviceManager) GetHealthServices(serviceName string) []string {
 		})
 
 		if len(forceHealthy) < 1 {
-			panic(errs.NewBllError("找不到服务"))
+			return serviceList
 		}
 
 		serviceList = append(serviceList, forceHealthy[0].(modelimpl.ServiceModel).Endpoints...)

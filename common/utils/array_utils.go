@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"go-webapi-fw/errs"
 	"reflect"
 )
 
@@ -45,7 +44,7 @@ func ArrayOrSliceContains(arrayOrSlice interface{}, ele interface{}) bool {
 	case reflect.Array, reflect.Slice:
 		break
 	default:
-		panic(errs.NewBllError("invalid array or slice"))
+		return false
 	}
 
 	arrLen := arrValueOf.Len()
@@ -116,12 +115,16 @@ func SliceRemove(slicePtr interface{}, ele interface{}, firstCount int) bool {
 		return false
 	}
 
+	if reflect.ValueOf(slicePtr).Kind() != reflect.Ptr {
+		return false
+	}
+
 	sValueOf := reflect.ValueOf(slicePtr).Elem()
 	switch sValueOf.Kind() {
 	case reflect.Slice:
 		break
 	default:
-		panic(errs.NewBllError("invalid slicePtr"))
+		return false
 	}
 
 	arrLen := sValueOf.Len()
@@ -209,12 +212,16 @@ func SliceRemoveByIndex(slicePtr interface{}, index ...int) bool {
 		return false
 	}
 
+	if reflect.ValueOf(slicePtr).Kind() != reflect.Ptr {
+		return false
+	}
+
 	sValueOf := reflect.ValueOf(slicePtr).Elem()
 	switch sValueOf.Kind() {
 	case reflect.Slice:
 		break
 	default:
-		panic(errs.NewBllError("invalid slicePtr"))
+		return false
 	}
 
 	arrLen := sValueOf.Len()
@@ -286,9 +293,9 @@ func CollectionIsEmpty(collection interface{}) bool {
 		case reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
 			return sValueOf.Elem().Len() < 1
 		default:
-			panic(errs.NewBllError("invalid collection type"))
+			return true
 		}
 	default:
-		panic(errs.NewBllError("invalid collection type"))
+		return true
 	}
 }
