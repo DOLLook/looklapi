@@ -23,6 +23,7 @@ func BindConsumer() {
 		bindConsumer(item)
 	}
 	_hasConsumerBind = true
+	loggers.GetLogger().Info("mq init complete")
 }
 
 /**
