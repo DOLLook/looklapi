@@ -54,8 +54,13 @@ func (logger *buildinLogger) Debug(msg string) {
 		return
 	}
 
-	methodName, fullFileName, _, lineNum := getTrace()
-	log.Println(fmt.Sprintf("%v %s %s\n\t%s:%d", levelName(_DEBUG), methodName, msg, fullFileName, lineNum))
+	//methodName, fullFileName, _, lineNum := getTrace()
+	//log.Println(fmt.Sprintf("%v %s %s\n\t%s:%d", levelName(_DEBUG), methodName, msg, fullFileName, lineNum))
+
+	methodName, _, _, _ := getTrace()
+	methodNameSplit := strings.Split(methodName, "/")
+	mn := "[" + methodNameSplit[len(methodNameSplit)-1] + "]"
+	log.Println(fmt.Sprintf("%v %s %s", levelName(_DEBUG), mn, msg))
 }
 
 // 提示
@@ -68,8 +73,13 @@ func (logger *buildinLogger) Info(msg string) {
 		return
 	}
 
-	methodName, fullFileName, _, lineNum := getTrace()
-	log.Println(fmt.Sprintf("%v %s %s\n\t%s:%d", levelName(_INFO)+" ", methodName, msg, fullFileName, lineNum))
+	//methodName, fullFileName, _, lineNum := getTrace()
+	//log.Println(fmt.Sprintf("%v %s %s\n\t%s:%d", levelName(_INFO)+" ", methodName, msg, fullFileName, lineNum))
+
+	methodName, _, _, _ := getTrace()
+	methodNameSplit := strings.Split(methodName, "/")
+	mn := "[" + methodNameSplit[len(methodNameSplit)-1] + "]"
+	log.Println(fmt.Sprintf("%v %s %s", levelName(_INFO)+" ", mn, msg))
 }
 
 // 警告
@@ -82,8 +92,13 @@ func (logger *buildinLogger) Warn(msg string) {
 		return
 	}
 
-	methodName, fullFileName, _, lineNum := getTrace()
-	log.Println(fmt.Sprintf("%v %s %s\n\t%s:%d", levelName(_WARN)+" ", methodName, msg, fullFileName, lineNum))
+	//methodName, fullFileName, _, lineNum := getTrace()
+	//log.Println(fmt.Sprintf("%v %s %s\n\t%s:%d", levelName(_WARN)+" ", methodName, msg, fullFileName, lineNum))
+
+	methodName, _, _, _ := getTrace()
+	methodNameSplit := strings.Split(methodName, "/")
+	mn := "[" + methodNameSplit[len(methodNameSplit)-1] + "]"
+	log.Println(fmt.Sprintf("%v %s %s", levelName(_WARN)+" ", mn, msg))
 }
 
 // 错误日志
@@ -111,7 +126,9 @@ func (logger *buildinLogger) Error(err error) {
 		log.Println(fmt.Sprintf("%v %s%s", levelName(_ERROR), err.Error(), stackTrace))
 	} else {
 		methodName, fullFileName, _, lineNum := getTrace()
-		log.Println(fmt.Sprintf("%v %s %s\n\t%s:%d", levelName(_ERROR), methodName, err.Error(), fullFileName, lineNum))
+		methodNameSplit := strings.Split(methodName, "/")
+		mn := "[" + methodNameSplit[len(methodNameSplit)-1] + "]"
+		log.Println(fmt.Sprintf("%v %s %s\n\t%s:%d", levelName(_ERROR), mn, err.Error(), fullFileName, lineNum))
 	}
 
 }
