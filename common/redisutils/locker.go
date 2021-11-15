@@ -2,6 +2,7 @@ package redisutils
 
 import (
 	"github.com/garyburd/redigo/redis"
+	"strings"
 	"time"
 )
 
@@ -39,28 +40,43 @@ func TryLock(lockName string, timeoutSecs int32) (bool, int64, error) {
 
 // 加锁
 func lock(lockName string, holdSecs int32) (bool, int64, error) {
+	//lockName = getLockName(lockName)
+	//
+	//scriptStr := `if redis.call('EXISTS',KEYS[1])==0 then
+	//			redis.call('SET',KEYS[1],ARGV[1])
+	//			return redis.call('EXPIRE',KEYS[1],ARGV[2])
+	//			else return 0
+	//			end`
+	//
+	//script := redis.NewScript(1, scriptStr)
+	//conn := getConn0(0)
+	//timeStamp := time.Now().UnixNano() / 1000000
+	//reply, err := script.Do(conn, lockName, timeStamp, holdSecs)
+	//
+	//if err != nil {
+	//	return false, 0, err
+	//}
+	//
+	//var result bool
+	//if err := parse(reply, &result); err != nil {
+	//	return false, 0, err
+	//}
+	//return result, timeStamp, nil
+
 	lockName = getLockName(lockName)
-
-	scriptStr := `if redis.call('EXISTS',KEYS[1])==0 then
-				redis.call('SET',KEYS[1],ARGV[1])
-				return redis.call('EXPIRE',KEYS[1],ARGV[2])
-				else return 0
-				end`
-
-	script := redis.NewScript(1, scriptStr)
 	conn := getConn0(0)
 	timeStamp := time.Now().UnixNano() / 1000000
-	reply, err := script.Do(conn, lockName, timeStamp, holdSecs)
+	reply, err := conn.Do("SET", lockName, timeStamp, "EX", holdSecs, "NX")
 
-	if err != nil {
+	if err != nil || reply == nil {
 		return false, 0, err
 	}
 
-	var result bool
-	if err := parse(reply, &result); err != nil {
-		return false, 0, err
+	if reply, ok := reply.(string); ok && strings.ToLower(reply) == "ok" {
+		return true, timeStamp, nil
+	} else {
+		return false, 0, nil
 	}
-	return result, timeStamp, nil
 }
 
 // 解锁
