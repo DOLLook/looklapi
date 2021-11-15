@@ -2,7 +2,7 @@ package iris_srv
 
 import (
 	"github.com/kataras/iris/v12"
-	"go-webapi-fw/web/iris_srv/controller"
+	"micro-webapi/web/iris_srv/controller"
 )
 
 // 注册路由

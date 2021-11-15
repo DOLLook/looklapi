@@ -1,10 +1,10 @@
 package web
 
 import (
-	"go-webapi-fw/common/appcontext"
-	"go-webapi-fw/common/loggers"
-	"go-webapi-fw/common/redisutils"
-	"go-webapi-fw/model/modelimpl"
+	"micro-webapi/common/appcontext"
+	"micro-webapi/common/loggers"
+	"micro-webapi/common/redisutils"
+	"micro-webapi/model/modelimpl"
 )
 
 // load the remote loglevel config

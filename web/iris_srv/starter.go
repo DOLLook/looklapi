@@ -3,9 +3,9 @@ package iris_srv
 import (
 	"context"
 	"github.com/kataras/iris/v12"
-	"go-webapi-fw/common/utils"
-	"go-webapi-fw/config"
-	"go-webapi-fw/web/iris_srv/middleware"
+	"micro-webapi/common/utils"
+	"micro-webapi/config"
+	"micro-webapi/web/iris_srv/middleware"
 	"sync"
 	"time"
 )

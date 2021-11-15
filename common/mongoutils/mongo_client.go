@@ -2,10 +2,10 @@ package mongoutils
 
 import (
 	"context"
-	"go-webapi-fw/common/utils"
-	appConfig "go-webapi-fw/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"micro-webapi/common/utils"
+	appConfig "micro-webapi/config"
 )
 
 const (

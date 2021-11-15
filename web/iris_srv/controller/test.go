@@ -2,7 +2,7 @@ package controller
 
 import (
 	iris "github.com/kataras/iris/v12"
-	"go-webapi-fw/model/modelbase"
+	"micro-webapi/model/modelbase"
 )
 
 type testController struct {

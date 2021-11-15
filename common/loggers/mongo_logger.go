@@ -2,13 +2,13 @@ package loggers
 
 import (
 	"fmt"
-	"go-webapi-fw/common/appcontext"
-	"go-webapi-fw/common/mongoutils"
-	"go-webapi-fw/common/utils"
-	"go-webapi-fw/config"
-	"go-webapi-fw/errs"
-	"go-webapi-fw/model/modelimpl"
-	"go-webapi-fw/model/mongo"
+	"micro-webapi/common/appcontext"
+	"micro-webapi/common/mongoutils"
+	"micro-webapi/common/utils"
+	"micro-webapi/config"
+	"micro-webapi/errs"
+	"micro-webapi/model/modelimpl"
+	"micro-webapi/model/mongo"
 	"reflect"
 	"strings"
 )

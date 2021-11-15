@@ -3,10 +3,10 @@ package mqutils
 import (
 	"errors"
 	"github.com/streadway/amqp"
-	"go-webapi-fw/common/loggers"
-	serviceDiscovery "go-webapi-fw/common/service-discovery"
-	"go-webapi-fw/common/utils"
-	"go-webapi-fw/errs"
+	"micro-webapi/common/loggers"
+	serviceDiscovery "micro-webapi/common/service-discovery"
+	"micro-webapi/common/utils"
+	"micro-webapi/errs"
 )
 
 /**

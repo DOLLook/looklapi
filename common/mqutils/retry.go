@@ -2,11 +2,11 @@ package mqutils
 
 import (
 	"fmt"
-	"go-webapi-fw/common/loggers"
-	"go-webapi-fw/common/mongoutils"
-	"go-webapi-fw/common/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"micro-webapi/common/loggers"
+	"micro-webapi/common/mongoutils"
+	"micro-webapi/common/utils"
 	"time"
 )
 
@@ -207,9 +207,9 @@ func addOrUpdate(model *mqMsgRetry) bool {
 	if !exist {
 		// add
 		if model.PublishType == int32(_Broadcast) {
-			model.hostIp = utils.HostIp()
+			model.HostIp = utils.HostIp()
 		} else {
-			model.hostIp = ""
+			model.HostIp = ""
 		}
 
 		model.CurrentRetry = 0

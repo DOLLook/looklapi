@@ -2,8 +2,8 @@ package mqutils
 
 import (
 	"github.com/streadway/amqp"
-	"go-webapi-fw/common/loggers"
-	"go-webapi-fw/common/utils"
+	"micro-webapi/common/loggers"
+	"micro-webapi/common/utils"
 )
 
 // 发布工作队列消息

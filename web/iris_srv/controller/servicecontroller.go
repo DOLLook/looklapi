@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/kataras/iris/v12"
-	serviceDiscovery "go-webapi-fw/common/service-discovery"
+	serviceDiscovery "micro-webapi/common/service-discovery"
 	"net/http"
 )
 

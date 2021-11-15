@@ -3,9 +3,9 @@ package service_discovery
 import (
 	"fmt"
 	consulApi "github.com/hashicorp/consul/api"
-	"go-webapi-fw/common/loggers"
-	"go-webapi-fw/common/utils"
-	appConfig "go-webapi-fw/config"
+	"micro-webapi/common/loggers"
+	"micro-webapi/common/utils"
+	appConfig "micro-webapi/config"
 	"strconv"
 	"strings"
 )

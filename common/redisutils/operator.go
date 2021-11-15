@@ -3,7 +3,7 @@ package redisutils
 import (
 	"errors"
 	"github.com/garyburd/redigo/redis"
-	"go-webapi-fw/common/utils"
+	"micro-webapi/common/utils"
 	"reflect"
 )
 

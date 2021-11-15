@@ -4,11 +4,11 @@ import (
 	"fmt"
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/robfig/cron/v3"
-	"go-webapi-fw/common/loggers"
-	"go-webapi-fw/common/redisutils"
-	"go-webapi-fw/common/utils"
-	appConfig "go-webapi-fw/config"
-	"go-webapi-fw/model/modelimpl"
+	"micro-webapi/common/loggers"
+	"micro-webapi/common/redisutils"
+	"micro-webapi/common/utils"
+	appConfig "micro-webapi/config"
+	"micro-webapi/model/modelimpl"
 )
 
 var svManager *serviceManager

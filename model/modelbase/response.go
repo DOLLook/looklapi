@@ -1,6 +1,6 @@
 package modelbase
 
-import "go-webapi-fw/errs"
+import "micro-webapi/errs"
 
 // api错误响应
 type errResponse struct {

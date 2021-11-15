@@ -1,10 +1,10 @@
 package main
 
 import (
-	serviceDiscovery "go-webapi-fw/common/service-discovery"
-	"go-webapi-fw/mqconsumers"
-	"go-webapi-fw/web"
-	"go-webapi-fw/web/iris_srv"
+	serviceDiscovery "micro-webapi/common/service-discovery"
+	"micro-webapi/mqconsumers"
+	"micro-webapi/web"
+	"micro-webapi/web/iris_srv"
 )
 
 func main() {

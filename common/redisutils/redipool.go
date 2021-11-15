@@ -2,8 +2,8 @@ package redisutils
 
 import (
 	"github.com/garyburd/redigo/redis"
-	"go-webapi-fw/common/utils"
-	"go-webapi-fw/config"
+	"micro-webapi/common/utils"
+	"micro-webapi/config"
 	"regexp"
 	"strconv"
 	"strings"

@@ -1,8 +1,8 @@
 server:
-  name: go-webapi-fw
+  name: micro-webapi
   port: 8001
 
-mysql: mysql://192.168.1.112:3306/wxservice?autoReconnect=true&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&useSSL=false
+mysql: mysql://192.168.1.112:3306/test?autoReconnect=true&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&useSSL=false
 
 mongodb_uri: mongodb://127.0.0.1:27018,127.0.0.1:27019/test?replicaSet=rs0
 
@@ -13,7 +13,7 @@ redis:
   timeout: 10000
 
 rabbitmq:
-  address: amqp://guest:guest@127.0.0.1:5672/yq
+  address: amqp://guest:guest@127.0.0.1:5672/test
 
 consul:
   host: 127.0.0.1
@@ -25,4 +25,4 @@ consul:
   deregister-critical-service-after: 600s
 
 logger:
-  default: mongo
+  default: buildin

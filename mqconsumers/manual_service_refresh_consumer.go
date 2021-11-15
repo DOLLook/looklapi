@@ -1,11 +1,11 @@
 package mqconsumers
 
 import (
-	"go-webapi-fw/common/loggers"
-	"go-webapi-fw/common/mqutils"
-	serviceDiscovery "go-webapi-fw/common/service-discovery"
-	"go-webapi-fw/common/utils"
-	"go-webapi-fw/model/modelimpl"
+	"micro-webapi/common/loggers"
+	"micro-webapi/common/mqutils"
+	serviceDiscovery "micro-webapi/common/service-discovery"
+	"micro-webapi/common/utils"
+	"micro-webapi/model/modelimpl"
 )
 
 /**

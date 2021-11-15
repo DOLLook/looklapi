@@ -1,8 +1,8 @@
 package loggers
 
 import (
-	"go-webapi-fw/common/utils"
-	appConfig "go-webapi-fw/config"
+	"micro-webapi/common/utils"
+	appConfig "micro-webapi/config"
 	"runtime"
 	"strings"
 )

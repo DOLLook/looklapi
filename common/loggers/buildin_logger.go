@@ -2,11 +2,11 @@ package loggers
 
 import (
 	"fmt"
-	"go-webapi-fw/common/appcontext"
-	"go-webapi-fw/common/utils"
-	"go-webapi-fw/errs"
-	"go-webapi-fw/model/modelimpl"
 	"log"
+	"micro-webapi/common/appcontext"
+	"micro-webapi/common/utils"
+	"micro-webapi/errs"
+	"micro-webapi/model/modelimpl"
 	"reflect"
 	"strings"
 )

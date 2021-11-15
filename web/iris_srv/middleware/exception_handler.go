@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"github.com/kataras/iris/v12"
-	"go-webapi-fw/common/loggers"
-	"go-webapi-fw/model/modelbase"
+	"micro-webapi/common/loggers"
+	"micro-webapi/model/modelbase"
 	"net/http"
 )
 

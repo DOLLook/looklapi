@@ -16,7 +16,7 @@ type mqMsgRetry struct {
 	Body         string    `bson:"body"`          // 消息体
 	UpdateTime   time.Time `bson:"update_time"`   // 更新时间
 	Status       byte      `bson:"status"`        // 消费状态 0 未消费, 1 已消费
-	hostIp       string    `bson:"hostIp"`        // 宿主ip
+	HostIp       string    `bson:"hostIp"`        // 宿主ip
 }
 
 // 获取集合名称
