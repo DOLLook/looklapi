@@ -69,7 +69,7 @@ func (manager *serviceManager) Init() {
 }
 
 /**
-更新手动服务配置
+更新服务配置
 */
 func (manager *serviceManager) UpdateManualService(manualService *modelimpl.ManualService) {
 	manager.cutoffCache = manager.cutoffCache[0:0]
