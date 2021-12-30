@@ -112,9 +112,9 @@ func (logger *buildinLogger) Error(err error) {
 	}
 
 	stackTrace := ""
-	if err, ok := err.(*errs.BllError); ok {
+	if berr, ok := err.(*errs.BllError); ok {
 		var trace []string
-		for _, stack := range err.StackTrace() {
+		for _, stack := range berr.StackTrace() {
 			if stack.Invalid() {
 				trace = append(trace, "\n\t"+stack.Method())
 			} else {

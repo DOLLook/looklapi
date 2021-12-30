@@ -3,6 +3,7 @@ module micro-webapi
 go 1.17
 
 require (
+	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/garyburd/redigo v1.6.2
 	github.com/gofrs/uuid v4.1.0+incompatible
 	github.com/hashicorp/consul/api v1.10.0

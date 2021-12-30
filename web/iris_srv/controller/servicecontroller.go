@@ -39,4 +39,5 @@ func (ctr *serviceController) healthCheck(ctx iris.Context) {
 	} else {
 		ctx.StatusCode(http.StatusOK)
 	}
+	ctx.Next()
 }

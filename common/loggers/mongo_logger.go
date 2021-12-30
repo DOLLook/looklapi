@@ -131,9 +131,9 @@ func (logger *mongoLoger) Error(err error) {
 	log.Content = err.Error()
 	log.Level = int32(_ERROR)
 
-	if err, ok := err.(*errs.BllError); ok {
+	if berr, ok := err.(*errs.BllError); ok {
 		var trace []string
-		for _, stack := range err.StackTrace() {
+		for _, stack := range berr.StackTrace() {
 			if stack.Invalid() {
 				trace = append(trace, stack.Method()+"\n")
 			} else {
@@ -151,5 +151,12 @@ func (logger *mongoLoger) Error(err error) {
 		log.Stacktrace = fmt.Sprintf("%s\n\t%s:%d", methodName, fullFileName, lineNum)
 	}
 
-	go mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log)
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+
+			}
+		}()
+		mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log)
+	}()
 }

@@ -7,8 +7,8 @@ import (
 	"net/http"
 )
 
-// 统一异常处理
-func ExceptionHandler() iris.Handler {
+// 统一panic处理
+func PanicHandler() iris.Handler {
 	return func(context iris.Context) {
 		defer func() {
 			if err := recover(); err != nil {
@@ -18,9 +18,6 @@ func ExceptionHandler() iris.Handler {
 				}
 
 				context.StopWithJSON(http.StatusOK, resp)
-				//if context.IsStopped() {
-				//	return
-				//}
 			}
 		}()
 
