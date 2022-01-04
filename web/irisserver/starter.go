@@ -1,4 +1,4 @@
-package iris_srv
+package irisserver
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"github.com/kataras/iris/v12/middleware/requestid"
 	"micro-webapi/common/utils"
 	"micro-webapi/config"
-	_ "micro-webapi/services/proxy" // 导入以执行init
-	"micro-webapi/web/iris_srv/middleware"
+	_ "micro-webapi/services/srv-proxy" // 导入以执行init
+	"micro-webapi/web/irisserver/irisserver-middleware"
 	"sync"
 	"time"
 )
@@ -16,10 +16,10 @@ import (
 func Start() {
 	app := iris.New()
 	app.UseRouter(requestid.New())
-	app.UseRouter(middleware.PanicHandler())
-	app.UseRouter(middleware.CorsHandler())
-	app.DoneGlobal(middleware.ErrHandler())
-	app.UseError(middleware.ErrHandler())
+	app.UseRouter(irisserver_middleware.PanicHandler())
+	app.UseRouter(irisserver_middleware.CorsHandler())
+	app.DoneGlobal(irisserver_middleware.ErrHandler())
+	app.UseError(irisserver_middleware.ErrHandler())
 
 	wg := new(sync.WaitGroup)
 	defer wg.Wait()

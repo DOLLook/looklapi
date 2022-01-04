@@ -1,9 +1,9 @@
-package impl
+package srv_impl
 
 import (
 	"micro-webapi/common/loggers"
 	"micro-webapi/common/wireutils"
-	"micro-webapi/services/isrv"
+	"micro-webapi/services/srv-isrv"
 	"reflect"
 )
 
@@ -11,10 +11,10 @@ type testSrvImpl struct {
 }
 
 func init() {
-	var srvTypeDef *isrv.TestSrvInterface
+	var srvTypeDef *srv_isrv.TestSrvInterface
 	wireutils.Bind(reflect.TypeOf(srvTypeDef), &testSrvImpl{}, false, 1)
 }
 
-func (srv *testSrvImpl) TestLog() {
-	loggers.GetLogger().Debug("test log")
+func (srv *testSrvImpl) TestLog(log string) {
+	loggers.GetLogger().Debug("test log: " + log)
 }

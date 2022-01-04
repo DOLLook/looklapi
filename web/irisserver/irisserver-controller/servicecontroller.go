@@ -1,4 +1,4 @@
-package controller
+package irisserver_controller
 
 import (
 	"github.com/kataras/iris/v12"
