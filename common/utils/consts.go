@@ -19,3 +19,5 @@ const (
 	MaxInt64  = int64(MaxUint64 >> 1)
 	MinInt64  = -MaxInt64 - 1
 )
+
+const HttpRequestHeader = "Http-Request-Header"

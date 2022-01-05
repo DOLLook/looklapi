@@ -15,6 +15,7 @@ func init() {
 	wireutils.Bind(reflect.TypeOf(srvTypeDef), &testSrvImpl{}, false, 1)
 }
 
-func (srv *testSrvImpl) TestLog(log string) {
+func (srv *testSrvImpl) TestLog(log string) error {
 	loggers.GetLogger().Debug("test log: " + log)
+	return nil
 }

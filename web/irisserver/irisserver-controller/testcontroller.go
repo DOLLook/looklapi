@@ -1,10 +1,12 @@
 package irisserver_controller
 
 import (
+	"context"
 	iris "github.com/kataras/iris/v12"
 	"micro-webapi/common/utils"
 	"micro-webapi/common/wireutils"
 	"micro-webapi/errs"
+	"micro-webapi/model/modelbase"
 	"micro-webapi/services/srv-isrv"
 	irisserver_middleware "micro-webapi/web/irisserver/irisserver-middleware"
 	"net/http"
@@ -41,12 +43,44 @@ func (ctr *testController) RegistRoute(irisApp *iris.Application) {
 		ctr.apiParty(),
 		"/hello",
 		http.MethodGet,
-		ctr.testSrv.TestLog,
+		ctr.testLog,
 		ctr.testLogParamValidator)
+
+	irisserver_middleware.RegisterController(
+		ctr.app,
+		ctr.apiParty(),
+		"/hello1",
+		http.MethodGet,
+		ctr.testLogWithResult,
+		ctr.testLogWithResultParamValidator)
+}
+
+// test log api
+func (ctr *testController) testLog(log string) error {
+	return ctr.testSrv.TestLog(log)
+}
+
+// test log with result and context api
+func (ctr *testController) testLogWithResult(context context.Context, log string) (*modelbase.ResponseResult, error) {
+	if err := ctr.testSrv.TestLog(log); err != nil {
+		return nil, err
+	}
+
+	httpHeader := context.Value(utils.HttpRequestHeader).(http.Header)
+	return modelbase.NewResponse(utils.StructToJson(httpHeader)), nil
 }
 
 // testLog参数校验
 func (ctr *testController) testLogParamValidator(log string) error {
+	if utils.IsEmpty(log) {
+		return errs.NewBllError("参数错误")
+	}
+
+	return nil
+}
+
+// testLog参数校验
+func (ctr *testController) testLogWithResultParamValidator(context context.Context, log string) error {
 	if utils.IsEmpty(log) {
 		return errs.NewBllError("参数错误")
 	}

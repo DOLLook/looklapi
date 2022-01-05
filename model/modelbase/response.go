@@ -13,15 +13,15 @@ type errResponse struct {
 }
 
 // api请求响应值
-type responseResult struct {
+type ResponseResult struct {
 	errResponse
 	// 结果
 	Result interface{}
 }
 
 // 请求结果
-func NewResponse(data interface{}) (result *responseResult) {
-	result = &responseResult{
+func NewResponse(data interface{}) (result *ResponseResult) {
+	result = &ResponseResult{
 		Result: data,
 	}
 	result.IsSuccess = true

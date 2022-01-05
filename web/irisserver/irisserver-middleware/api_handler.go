@@ -1,11 +1,11 @@
 package irisserver_middleware
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/kataras/iris/v12"
 	"micro-webapi/common/utils"
-	"micro-webapi/errs"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -36,6 +36,76 @@ func RegisterController(irisApp *iris.Application, apiParty string, routePath st
 		panic(errors.New("irisapp must not be nil"))
 	}
 
+	apiParty, routePath = routeCheck(apiParty, routePath)
+	mkey := fmt.Sprintf("%s:%s%s", httpMethod, apiParty, routePath)
+	if ctrDataMap[mkey] != nil {
+		panic(errors.New(mkey + " duplicated register"))
+	}
+
+	ctrValuePtr, ctrType := controllerCheck(controller)
+	paramValidatorValuePtr := paramValidatorCheck(paramValidator, ctrType)
+
+	_ = registerRoute(irisApp, apiParty, routePath, httpMethod)
+
+	ctrMetadata := &controllerMetadata{
+		party:          apiParty,
+		routePath:      routePath,
+		httpMethod:     httpMethod,
+		controller:     ctrValuePtr,
+		paramValidator: paramValidatorValuePtr,
+		controllerType: ctrType,
+	}
+
+	ctrDataMap[mkey] = ctrMetadata
+}
+
+// 接口处理器
+func apiSrvHandler(ctx iris.Context) {
+	relativePath, mkey := reqApiMapKey(ctx)
+
+	ctrMetadata := ctrDataMap[mkey]
+	if ctrDataMap == nil {
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.Next()
+		return
+	}
+
+	if ctx.Method() != ctrMetadata.httpMethod {
+		err := fmt.Sprintf("%s not allowed %s", relativePath, ctx.Method())
+		ctx.SetErr(errors.New(err))
+		ctx.Next()
+		return
+	}
+
+	ctrParams, err := reqApiParams(ctx, ctrMetadata)
+	if err != nil {
+		ctx.SetErr(err)
+		ctx.Next()
+		return
+	}
+
+	if err := validate(ctrMetadata, ctrParams); err != nil {
+		ctx.SetErr(err)
+		ctx.Next()
+		return
+	}
+
+	if resp, err := handle(ctrMetadata, ctrParams); err != nil {
+		ctx.SetErr(err)
+		ctx.Next()
+		return
+	} else if resp != nil {
+		if _, err := ctx.JSON(resp); err != nil {
+			ctx.SetErr(err)
+			ctx.Next()
+			return
+		}
+	}
+
+	ctx.Next()
+}
+
+func routeCheck(apiParty string, routePath string) (string, string) {
 	if utils.IsEmpty(apiParty) {
 		panic(errors.New("apiParty must not be nil or empty"))
 	}
@@ -52,6 +122,10 @@ func RegisterController(irisApp *iris.Application, apiParty string, routePath st
 		routePath = "/" + routePath
 	}
 
+	return apiParty, routePath
+}
+
+func controllerCheck(controller interface{}) (*reflect.Value, reflect.Type) {
 	if controller == nil {
 		panic(errors.New("controller must not be nil"))
 	}
@@ -61,9 +135,19 @@ func RegisterController(irisApp *iris.Application, apiParty string, routePath st
 		panic(errors.New("controller must be a func"))
 	}
 
+	contextType := reflect.TypeOf((*context.Context)(nil)).Elem()
 	ctrType := reflect.TypeOf(controller)
 	for i := 0; i < ctrType.NumIn(); i++ {
-		pk := ctrType.In(i).Kind()
+		paramType := ctrType.In(i)
+		if paramType == contextType {
+			if i != 0 {
+				panic(errors.New("*context.Context must be the first param"))
+			} else {
+				continue
+			}
+		}
+
+		pk := paramType.Kind()
 		if pk == reflect.Slice || pk == reflect.Map || pk == reflect.Struct {
 			continue
 		}
@@ -77,47 +161,74 @@ func RegisterController(irisApp *iris.Application, apiParty string, routePath st
 		}
 	}
 
-	var pvalidator reflect.Value
-	if paramValidator != nil {
-		pvalidator = reflect.ValueOf(paramValidator)
-		if pvalidator.Kind() != reflect.Func {
-			panic(errors.New("paramValidator must be a func"))
-		}
-
-		pvalidatorType := reflect.TypeOf(paramValidator)
-
-		if ctrType.NumIn() != pvalidatorType.NumIn() {
-			panic(errors.New("paramValidator's param must be the same of controller"))
-		}
-
-		if pvalidatorType.NumOut() != 1 {
-			panic(errors.New("paramValidator's return must be one"))
-		}
-
-		//outKind := pvalidatorType.Out(0).Kind()
-		//if outKind != reflect.Interface {
-		//	panic(errors.New("paramValidator's return must be error"))
-		//}
-		//mustImplType := reflect.TypeOf((*error)(nil)).Elem()
-		//if !pvalidatorType.Out(0).Implements(mustImplType) {
-		//	panic(errors.New("paramValidator's return must implements error interface"))
-		//}
-
+	outCount := ctrType.NumOut()
+	if outCount == 1 {
+		// only return error
 		errorType := reflect.TypeOf((*error)(nil)).Elem()
-		if pvalidatorType.Out(0) != errorType {
-			panic(errors.New("paramValidator's return must be error interface"))
+		if ctrType.Out(0) != errorType {
+			panic(errors.New("controller's only one return must be error interface"))
 		}
+	} else if outCount == 2 {
+		// return result and error, the first one is result, the second one is error
+		errorType := reflect.TypeOf((*error)(nil)).Elem()
+		if ctrType.Out(1) != errorType {
+			panic(errors.New("controller's last return must be error interface"))
+		}
+	} else {
+		panic(errors.New("controller's return must be one or two. less than 1 or more than 2 return is not supported"))
+	}
 
-		for i := 0; i < ctrType.NumIn(); i++ {
-			ctrParam := ctrType.In(i)
-			validatorParam := pvalidatorType.In(i)
+	return &ctrVal, ctrType
+}
 
-			if ctrParam != validatorParam {
-				panic(errors.New("paramValidator's param must be the same of controller"))
-			}
+func paramValidatorCheck(paramValidator interface{}, ctrType reflect.Type) *reflect.Value {
+	if paramValidator == nil {
+		return nil
+	}
+
+	var pvalidator reflect.Value
+	pvalidator = reflect.ValueOf(paramValidator)
+	if pvalidator.Kind() != reflect.Func {
+		panic(errors.New("paramValidator must be a func"))
+	}
+
+	pvalidatorType := reflect.TypeOf(paramValidator)
+
+	if ctrType.NumIn() != pvalidatorType.NumIn() {
+		panic(errors.New("paramValidator's param must be the same of controller"))
+	}
+
+	if pvalidatorType.NumOut() != 1 {
+		panic(errors.New("paramValidator's return must be one"))
+	}
+
+	//outKind := pvalidatorType.Out(0).Kind()
+	//if outKind != reflect.Interface {
+	//	panic(errors.New("paramValidator's return must be error"))
+	//}
+	//mustImplType := reflect.TypeOf((*error)(nil)).Elem()
+	//if !pvalidatorType.Out(0).Implements(mustImplType) {
+	//	panic(errors.New("paramValidator's return must implements error interface"))
+	//}
+
+	errorType := reflect.TypeOf((*error)(nil)).Elem()
+	if pvalidatorType.Out(0) != errorType {
+		panic(errors.New("paramValidator's return must be error interface"))
+	}
+
+	for i := 0; i < ctrType.NumIn(); i++ {
+		ctrParam := ctrType.In(i)
+		validatorParam := pvalidatorType.In(i)
+
+		if ctrParam != validatorParam {
+			panic(errors.New("paramValidator's param must be the same of controller"))
 		}
 	}
 
+	return &pvalidator
+}
+
+func registerRoute(irisApp *iris.Application, apiParty string, routePath string, httpMethod string) iris.Party {
 	party := irisApp.Party(apiParty)
 
 	// 绑定路由
@@ -138,21 +249,11 @@ func RegisterController(irisApp *iris.Application, apiParty string, routePath st
 		panic("not suppored the http method")
 	}
 
-	ctrMetadata := &controllerMetadata{
-		party:          apiParty,
-		routePath:      routePath,
-		httpMethod:     httpMethod,
-		controller:     &ctrVal,
-		paramValidator: &pvalidator,
-		controllerType: ctrType,
-	}
-
-	mkey := fmt.Sprintf("%s:%s%s", httpMethod, apiParty, routePath)
-	ctrDataMap[mkey] = ctrMetadata
+	return party
 }
 
-// 接口处理器
-func apiSrvHandler(ctx iris.Context) {
+// get the controller metadata key
+func reqApiMapKey(ctx iris.Context) (relativePath, mkey string) {
 	path := ctx.Path()
 	path = strings.TrimPrefix(path, "http://")
 	path = strings.TrimPrefix(path, "https://")
@@ -160,41 +261,41 @@ func apiSrvHandler(ctx iris.Context) {
 	startIndex := strings.Index(path, "/")
 	endIndex := strings.Index(path, "?")
 
-	var mkey string
 	if endIndex >= 0 {
-		mkey = fmt.Sprintf("%s:%s", ctx.Method(), path[startIndex:endIndex-1])
+		relativePath = path[startIndex : endIndex-1]
 	} else {
-		mkey = fmt.Sprintf("%s:%s", ctx.Method(), path[startIndex:])
+		relativePath = path[startIndex:]
 	}
 
-	ctrMetadata := ctrDataMap[mkey]
-	if ctrDataMap == nil {
-		ctx.StatusCode(http.StatusNotFound)
-		ctx.Next()
-		return
-	}
+	mkey = fmt.Sprintf("%s:%s", ctx.Method(), relativePath)
 
-	if ctx.Method() != ctrMetadata.httpMethod {
-		err := fmt.Sprintf("%s not allowed %s", path, ctx.Method())
-		ctx.SetErr(errs.NewBllError(err))
-		ctx.Next()
-		return
-	}
+	return
+}
 
+// get the request param's reflet.Value slice
+func reqApiParams(ctx iris.Context, ctrMetadata *controllerMetadata) ([]reflect.Value, error) {
 	nonReqParamCount := 0
 	ctrParams := make([]reflect.Value, 0)
 	ctxUrlParams := ctx.URLParamsSorted()
+	contextType := reflect.TypeOf((*context.Context)(nil)).Elem()
+
 	for i := 0; i < ctrMetadata.controllerType.NumIn(); i++ {
 		paramType := ctrMetadata.controllerType.In(i)
+		if paramType == contextType {
+			nonReqParamCount++
+
+			myCtx := context.WithValue(context.Background(), utils.HttpRequestHeader, ctx.Request().Header)
+			ctrParams = append(ctrParams, reflect.ValueOf(myCtx))
+			continue
+		}
+
 		pk := paramType.Kind()
 		if pk == reflect.Slice || pk == reflect.Map || pk == reflect.Struct {
 			nonReqParamCount++
 
 			val := reflect.New(paramType)
 			if err := ctx.ReadJSON(val.Interface()); err != nil {
-				ctx.SetErr(err)
-				ctx.Next()
-				return
+				return nil, err
 			}
 
 			ctrParams = append(ctrParams, val.Elem())
@@ -202,9 +303,7 @@ func apiSrvHandler(ctx iris.Context) {
 			index := i - nonReqParamCount
 			if len(ctxUrlParams) > index && !utils.IsEmpty(ctxUrlParams[index].Value) {
 				if val, err := parseUrlParam(pk, ctxUrlParams[index].Value); err != nil {
-					ctx.SetErr(err)
-					ctx.Next()
-					return
+					return nil, err
 				} else {
 					ctrParams = append(ctrParams, val)
 				}
@@ -215,19 +314,7 @@ func apiSrvHandler(ctx iris.Context) {
 		}
 	}
 
-	if ctrMetadata.paramValidator != nil {
-		validateResult := ctrMetadata.paramValidator.Call(ctrParams)
-		if validateResult != nil && len(validateResult) > 0 {
-			if err, ok := validateResult[0].Interface().(error); ok {
-				ctx.SetErr(err)
-				ctx.Next()
-				return
-			}
-		}
-	}
-
-	ctrMetadata.controller.Call(ctrParams)
-	ctx.Next()
+	return ctrParams, nil
 }
 
 func parseUrlParam(paramKind reflect.Kind, strVal string) (reflect.Value, error) {
@@ -255,4 +342,41 @@ func parseUrlParam(paramKind reflect.Kind, strVal string) (reflect.Value, error)
 	}
 
 	return reflect.ValueOf(nil), nil
+}
+
+// do validate the params
+func validate(ctrMetadata *controllerMetadata, ctrParams []reflect.Value) error {
+	if ctrMetadata.paramValidator == nil {
+		return nil
+	}
+
+	validateResult := ctrMetadata.paramValidator.Call(ctrParams)
+	if validateResult != nil && len(validateResult) > 0 {
+		if err := validateResult[0].Interface(); err != nil {
+			return err.(error)
+		}
+	}
+	return nil
+}
+
+// do process
+func handle(ctrMetadata *controllerMetadata, ctrParams []reflect.Value) (interface{}, error) {
+	handleResult := ctrMetadata.controller.Call(ctrParams)
+	if handleResult != nil && len(handleResult) > 0 {
+		if ctrMetadata.controllerType.NumOut() == 1 {
+			if err := handleResult[0].Interface(); err != nil {
+				return nil, err.(error)
+			}
+		} else {
+			if err := handleResult[1].Interface(); err != nil {
+				return nil, err.(error)
+			}
+
+			if resp := handleResult[0].Interface(); resp != nil {
+				return resp, nil
+			}
+		}
+	}
+
+	return nil, nil
 }

@@ -25,10 +25,14 @@ func init() {
 }
 
 // 代理实现
-func (proxy *testSrvProxy) TestLog(log string) {
+func (proxy *testSrvProxy) TestLog(log string) error {
 	loggers.GetLogger().Debug("before log")
 
-	proxy.srv.TestLog(log)
+	if err := proxy.srv.TestLog(log); err != nil {
+		return err
+	}
 
 	loggers.GetLogger().Debug("after log")
+
+	return nil
 }
