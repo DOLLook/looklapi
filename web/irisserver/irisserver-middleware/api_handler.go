@@ -135,6 +135,7 @@ func controllerCheck(controller interface{}) (*reflect.Value, reflect.Type) {
 		panic(errors.New("controller must be a func"))
 	}
 
+	hasBody := false
 	contextType := reflect.TypeOf((*context.Context)(nil)).Elem()
 	ctrType := reflect.TypeOf(controller)
 	for i := 0; i < ctrType.NumIn(); i++ {
@@ -157,6 +158,10 @@ func controllerCheck(controller interface{}) (*reflect.Value, reflect.Type) {
 
 		pk := paramType.Kind()
 		if pk == reflect.Slice || pk == reflect.Map || pk == reflect.Struct {
+			if hasBody {
+				panic(errors.New("request body can not set more than one"))
+			}
+			hasBody = true
 			continue
 		}
 
