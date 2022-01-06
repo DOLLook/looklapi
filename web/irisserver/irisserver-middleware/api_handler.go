@@ -138,10 +138,18 @@ func controllerCheck(controller interface{}) (*reflect.Value, reflect.Type) {
 	contextType := reflect.TypeOf((*context.Context)(nil)).Elem()
 	ctrType := reflect.TypeOf(controller)
 	for i := 0; i < ctrType.NumIn(); i++ {
+		isPtr := false
 		paramType := ctrType.In(i)
+		if paramType.Kind() == reflect.Ptr {
+			isPtr = true
+			paramType = paramType.Elem()
+		}
+
 		if paramType == contextType {
 			if i != 0 {
-				panic(errors.New("*context.Context must be the first param"))
+				panic(errors.New("context.Context must be the first param"))
+			} else if isPtr {
+				panic(errors.New("context.Context can not be ptr"))
 			} else {
 				continue
 			}
@@ -150,6 +158,10 @@ func controllerCheck(controller interface{}) (*reflect.Value, reflect.Type) {
 		pk := paramType.Kind()
 		if pk == reflect.Slice || pk == reflect.Map || pk == reflect.Struct {
 			continue
+		}
+
+		if isPtr {
+			panic(errors.New("url param must be primitive type"))
 		}
 
 		switch pk {
@@ -280,7 +292,13 @@ func reqApiParams(ctx iris.Context, ctrMetadata *controllerMetadata) ([]reflect.
 	contextType := reflect.TypeOf((*context.Context)(nil)).Elem()
 
 	for i := 0; i < ctrMetadata.controllerType.NumIn(); i++ {
+		isPtr := false
 		paramType := ctrMetadata.controllerType.In(i)
+		if paramType.Kind() == reflect.Ptr {
+			isPtr = true
+			paramType = paramType.Elem()
+		}
+
 		if paramType == contextType {
 			nonReqParamCount++
 
@@ -298,7 +316,12 @@ func reqApiParams(ctx iris.Context, ctrMetadata *controllerMetadata) ([]reflect.
 				return nil, err
 			}
 
-			ctrParams = append(ctrParams, val.Elem())
+			if isPtr {
+				ctrParams = append(ctrParams, val)
+			} else {
+				ctrParams = append(ctrParams, val.Elem())
+			}
+
 		} else {
 			index := i - nonReqParamCount
 			if len(ctxUrlParams) > index && !utils.IsEmpty(ctxUrlParams[index].Value) {
