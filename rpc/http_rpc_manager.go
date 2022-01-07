@@ -277,6 +277,7 @@ func reqParamGenerator(fntyp reflect.Type, args []reflect.Value, alias []string)
 	return
 }
 
+// get the service uri, you can define your own service uri generator hear.
 func getEndpoint(srvName string) (endpoint string, err error) {
 	srvslice := service_discovery.GetServiceManager().GetHealthServices(srvName)
 	srvlen := len(srvslice)
