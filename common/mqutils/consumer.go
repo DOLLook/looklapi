@@ -286,8 +286,18 @@ func NewBroadcastConsumer(exchange string, maxRetry uint32) *consumer {
 }
 
 // 接收到消息
-func (consumer *consumer) onRecieved(msg string) bool {
-	defer loggers.RecoverLog()
+func (consumer *consumer) onRecieved(msg string) (result bool) {
+	defer func() {
+		if err := recover(); err != nil {
+			if tr, ok := err.(error); ok {
+				loggers.GetLogger().Error(tr)
+			} else if msg, ok := err.(string); ok {
+				loggers.GetLogger().Error(errors.New(msg))
+			}
+
+			result = false
+		}
+	}()
 
 	if consumer.Type == _WorkQueue {
 		if serviceDiscovery.GetServiceManager().IsHostCutoff() {
@@ -309,7 +319,7 @@ func (consumer *consumer) onRecieved(msg string) bool {
 		return true
 	}
 
-	result := consumer.Consume(metaMsg.JsonContent)
+	result = consumer.Consume(metaMsg.JsonContent)
 	if !result {
 		result = retry(metaMsg, consumer)
 	} else {
