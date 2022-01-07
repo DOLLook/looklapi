@@ -21,3 +21,9 @@ const (
 )
 
 const HttpRequestHeader = "Http-Request-Header"
+
+type EnumServiceName string
+
+const (
+	TEST_SERVICE EnumServiceName = "testService"
+)
