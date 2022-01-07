@@ -21,6 +21,7 @@ type RpcService interface {
 var srvMap = make(map[string]RpcService)
 
 var headerType = reflect.TypeOf((*http.Header)(nil)).Elem()
+var nilErrValue = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem())
 
 // 获取调用客户端
 func GetHttpRpcClient(srvName utils.EnumServiceName) RpcService {
@@ -107,7 +108,7 @@ func httpRpcWrap(srvName string, fntyp reflect.Type, reqMethod string, reqRoute 
 			return
 		}
 
-		results = append(results, reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()))
+		results = append(results, nilErrValue)
 		return
 	}
 }
