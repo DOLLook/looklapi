@@ -30,7 +30,7 @@ var ctrDataMap = make(map[string]*controllerMetadata)
 // httpMethod 请求方式
 // controller 控制器
 // paramValidator 控制器参数校验
-func RegisterController(irisApp *iris.Application, apiParty string, routePath string, httpMethod string, controller interface{}, paramValidator interface{}) {
+func RegisterController(irisApp *iris.Application, apiParty string, routePath string, httpMethod string, controller interface{}, paramValidator interface{}, beforeHandlers []iris.Handler, afterHandlers []iris.Handler) {
 
 	if irisApp == nil {
 		panic(errors.New("irisapp must not be nil"))
@@ -45,7 +45,7 @@ func RegisterController(irisApp *iris.Application, apiParty string, routePath st
 	ctrValuePtr, ctrType := controllerCheck(controller)
 	paramValidatorValuePtr := paramValidatorCheck(paramValidator, ctrType)
 
-	_ = registerRoute(irisApp, apiParty, routePath, httpMethod)
+	_ = registerRoute(irisApp, apiParty, routePath, httpMethod, beforeHandlers, afterHandlers)
 
 	ctrMetadata := &controllerMetadata{
 		party:          apiParty,
@@ -245,22 +245,31 @@ func paramValidatorCheck(paramValidator interface{}, ctrType reflect.Type) *refl
 	return &pvalidator
 }
 
-func registerRoute(irisApp *iris.Application, apiParty string, routePath string, httpMethod string) iris.Party {
+func registerRoute(irisApp *iris.Application, apiParty string, routePath string, httpMethod string, beforeHandlers []iris.Handler, afterHandlers []iris.Handler) iris.Party {
 	party := irisApp.Party(apiParty)
+
+	var handlerSlice []iris.Handler
+	if len(beforeHandlers) > 0 {
+		handlerSlice = append(handlerSlice, beforeHandlers...)
+	}
+	handlerSlice = append(handlerSlice, apiSrvHandler)
+	if len(afterHandlers) > 0 {
+		handlerSlice = append(handlerSlice, afterHandlers...)
+	}
 
 	// 绑定路由
 	switch httpMethod {
 	case http.MethodGet:
-		party.Get(routePath, apiSrvHandler)
+		party.Get(routePath, handlerSlice...)
 		break
 	case http.MethodHead:
-		party.Head(routePath, apiSrvHandler)
+		party.Head(routePath, handlerSlice...)
 		break
 	case http.MethodPost:
-		party.Post(routePath, apiSrvHandler)
+		party.Post(routePath, handlerSlice...)
 		break
 	case http.MethodOptions:
-		party.Options(routePath, apiSrvHandler)
+		party.Options(routePath, handlerSlice...)
 		break
 	default:
 		panic("not suppored the http method")
@@ -308,6 +317,10 @@ func reqApiParams(ctx iris.Context, ctrMetadata *controllerMetadata) ([]reflect.
 			nonReqParamCount++
 
 			myCtx := context.WithValue(context.Background(), utils.HttpRequestHeader, ctx.Request().Header)
+			for _, entry := range *ctx.Values() {
+				myCtx = context.WithValue(myCtx, entry.Key, entry.Value())
+			}
+
 			ctrParams = append(ctrParams, reflect.ValueOf(myCtx))
 			continue
 		}

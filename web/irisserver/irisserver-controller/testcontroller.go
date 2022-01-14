@@ -44,7 +44,9 @@ func (ctr *testController) RegistRoute(irisApp *iris.Application) {
 		"/hello",
 		http.MethodGet,
 		ctr.testLog,
-		ctr.testLogParamValidator)
+		ctr.testLogParamValidator,
+		nil,
+		nil)
 
 	irisserver_middleware.RegisterController(
 		ctr.app,
@@ -52,7 +54,9 @@ func (ctr *testController) RegistRoute(irisApp *iris.Application) {
 		"/hello1",
 		http.MethodGet,
 		ctr.testLogWithResult,
-		ctr.testLogWithResultParamValidator)
+		ctr.testLogWithResultParamValidator,
+		nil,
+		nil)
 }
 
 // test log api

@@ -1,6 +1,6 @@
 package utils
 
-import "encoding/json"
+var json = ConfigWithCustomTimeFormat
 
 // 转json
 func StructToJson(t interface{}) string {
