@@ -6,7 +6,6 @@ import (
 	"github.com/kataras/iris/v12/middleware/requestid"
 	"micro-webapi/common/utils"
 	"micro-webapi/config"
-	_ "micro-webapi/services/srv-proxy" // 导入以执行init
 	"micro-webapi/web/irisserver/irisserver-middleware"
 	"sync"
 	"time"

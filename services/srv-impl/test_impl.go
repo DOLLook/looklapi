@@ -11,8 +11,9 @@ type testSrvImpl struct {
 }
 
 func init() {
-	var srvTypeDef *srv_isrv.TestSrvInterface
-	wireutils.Bind(reflect.TypeOf(srvTypeDef), &testSrvImpl{}, false, 1)
+	testSrv := &testSrvImpl{}
+	// 绑定接口映射
+	wireutils.Bind(reflect.TypeOf((*srv_isrv.TestSrvInterface)(nil)).Elem(), testSrv, false, 1)
 }
 
 func (srv *testSrvImpl) TestLog(log string) error {

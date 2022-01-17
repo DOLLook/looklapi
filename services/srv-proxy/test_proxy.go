@@ -10,18 +10,13 @@ import (
 
 // testsrv 代理
 type testSrvProxy struct {
-	srv srv_isrv.TestSrvInterface
+	srv srv_isrv.TestSrvInterface `wired:"Autowired"`
 }
 
 func init() {
 	proxyIns := &testSrvProxy{}
-
-	// 注入依赖
-	var srvTypeDef *srv_isrv.TestSrvInterface
-	proxyIns.srv = wireutils.Resovle(reflect.TypeOf(srvTypeDef)).(srv_isrv.TestSrvInterface)
-
-	// 绑定依赖
-	wireutils.Bind(reflect.TypeOf(srvTypeDef), proxyIns, true, 1)
+	// 绑定接口映射
+	wireutils.Bind(reflect.TypeOf((*srv_isrv.TestSrvInterface)(nil)).Elem(), proxyIns, true, 1)
 }
 
 // 代理实现

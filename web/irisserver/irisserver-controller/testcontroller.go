@@ -15,7 +15,7 @@ import (
 
 type testController struct {
 	app     *iris.Application
-	testSrv srv_isrv.TestSrvInterface
+	testSrv srv_isrv.TestSrvInterface `wired:"Autowired"`
 }
 
 var testApi *testController
@@ -23,6 +23,7 @@ var testApi *testController
 func init() {
 	testApi = &testController{}
 	ApiSlice = append(ApiSlice, testApi)
+	wireutils.Bind(reflect.TypeOf((*testController)(nil)).Elem(), testApi, false, 1)
 }
 
 func (ctr *testController) apiParty() string {
@@ -33,9 +34,8 @@ func (ctr *testController) apiParty() string {
 func (ctr *testController) RegistRoute(irisApp *iris.Application) {
 	ctr.app = irisApp
 
-	// 注入依赖
-	var srvTypeDef *srv_isrv.TestSrvInterface
-	ctr.testSrv = wireutils.Resovle(reflect.TypeOf(srvTypeDef)).(srv_isrv.TestSrvInterface)
+	//// 注入依赖
+	//ctr.testSrv = wireutils.Resovle(reflect.TypeOf((*srv_isrv.TestSrvInterface)(nil)).Elem()).(srv_isrv.TestSrvInterface)
 
 	// 绑定路由
 	irisserver_middleware.RegisterController(
