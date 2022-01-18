@@ -58,7 +58,9 @@ func (publisher *appEventPublisher) PublishEvent(event interface{}) {
 	etype := reflect.TypeOf(event)
 	if observers, ok := publisher.observers[etype]; ok {
 		for _, observer := range observers {
-			observer.OnApplicationEvent(event)
+			ob := observer
+			go onEvent(ob, event)
+			//observer.OnApplicationEvent(event)
 		}
 	}
 }
