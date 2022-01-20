@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/json-iterator/go"
+	"github.com/json-iterator/go/extra"
 	"strings"
 	"time"
 	"unsafe"
@@ -71,6 +72,7 @@ var (
 
 func init() {
 	ConfigWithCustomTimeFormat.RegisterExtension(&CustomTimeExtension{})
+	extra.RegisterFuzzyDecoders()
 }
 
 func AddTimeFormatAlias(alias, format string) {

@@ -1,9 +1,10 @@
 package main
 
 import (
+	"micro-webapi/common/appcontext"
 	serviceDiscovery "micro-webapi/common/service-discovery"
 	"micro-webapi/common/wireutils"
-	"micro-webapi/mqconsumers"
+	_ "micro-webapi/mqconsumers"        // 导入以执行init
 	_ "micro-webapi/rpc"                // 导入以执行init
 	_ "micro-webapi/services/srv-proxy" // 导入以执行init
 	"micro-webapi/web"
@@ -12,7 +13,7 @@ import (
 
 func main() {
 	wireutils.Inject()
-	mqconsumers.Initialize()
+	appcontext.GetAppEventPublisher().PublishEvent(appcontext.AppEventBeanInjected(0))
 	serviceDiscovery.GetServiceManager().Init()
 	web.LoadLogConfig()
 	irisserver.Start()

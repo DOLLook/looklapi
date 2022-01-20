@@ -79,6 +79,17 @@ func Resovle(itype reflect.Type) interface{} {
 	return targets[0].target
 }
 
+// 获取所有对象
+func ResovleAll(itype reflect.Type) []interface{} {
+	targets := resovle(itype)
+	var all = make([]interface{}, len(targets))
+	for i, t := range targets {
+		all[i] = t.target
+	}
+
+	return all
+}
+
 // 注入对象
 func Inject() {
 	if injected {

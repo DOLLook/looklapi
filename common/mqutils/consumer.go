@@ -3,16 +3,20 @@ package mqutils
 import (
 	"errors"
 	"github.com/streadway/amqp"
+	"micro-webapi/common/appcontext"
 	"micro-webapi/common/loggers"
 	serviceDiscovery "micro-webapi/common/service-discovery"
 	"micro-webapi/common/utils"
 	"micro-webapi/errs"
+	"reflect"
 )
 
-/**
-绑定消费者
-*/
-func BindConsumer() {
+type consumerBinder struct {
+}
+
+// recieved app event and process.
+// for event publish well, the developers must deal with the panic by their self
+func (binder *consumerBinder) OnApplicationEvent(event interface{}) {
 	defer loggers.RecoverLog()
 
 	if _hasConsumerBind || _consumerContainer == nil || len(_consumerContainer) < 1 {
@@ -24,6 +28,16 @@ func BindConsumer() {
 	}
 	_hasConsumerBind = true
 	loggers.GetLogger().Info("mq init complete")
+}
+
+// regiser to the application event publisher
+func (binder *consumerBinder) Subscribe() {
+	appcontext.GetAppEventPublisher().Subscribe(binder, reflect.TypeOf(appcontext.AppEventBeanInjected(0)))
+}
+
+func init() {
+	binder := &consumerBinder{}
+	binder.Subscribe()
 }
 
 /**
@@ -210,9 +224,10 @@ var _consumerContainer []*consumer // 消费者容器
 
 // 消费者
 type consumer struct {
-	Type     consumerType      // 消费者类型
-	MaxRetry uint32            // 最大重试次数
-	Consume  func(string) bool // 处理器
+	Type        consumerType               // 消费者类型
+	MaxRetry    uint32                     // 最大重试次数
+	MessageType reflect.Type               // 消息类型
+	Consume     func(msg interface{}) bool // 处理器
 
 	Exchange string // broadcast交换器名称
 
@@ -223,7 +238,7 @@ type consumer struct {
 }
 
 // 新建消费者
-func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uint32, parallel bool, maxRetry uint32) *consumer {
+func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uint32, parallel bool, maxRetry uint32, messageType reflect.Type, consume func(msg interface{}) bool) {
 	if utils.IsEmpty(routeKey) {
 		err := errs.NewBllError("invalid routekey")
 		loggers.GetBuildinLogger().Error(err)
@@ -255,14 +270,15 @@ func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uin
 		Concurrency:   concurrency,
 		PrefetchCount: prefetchCount,
 		Parallel:      parallel,
+		MessageType:   messageType,
+		Consume:       consume,
 	}
 
 	_consumerContainer = append(_consumerContainer, cs)
-	return cs
 }
 
 // 新建消费者
-func NewBroadcastConsumer(exchange string, maxRetry uint32) *consumer {
+func NewBroadcastConsumer(exchange string, maxRetry uint32, messageType reflect.Type, consume func(msg interface{}) bool) {
 	if utils.IsEmpty(exchange) {
 		err := errs.NewBllError("invalid exchange")
 		loggers.GetBuildinLogger().Error(err)
@@ -276,13 +292,14 @@ func NewBroadcastConsumer(exchange string, maxRetry uint32) *consumer {
 	}
 
 	cs := &consumer{
-		Type:     _Broadcast,
-		MaxRetry: maxRetry,
-		Exchange: exchange,
+		Type:        _Broadcast,
+		MaxRetry:    maxRetry,
+		Exchange:    exchange,
+		MessageType: messageType,
+		Consume:     consume,
 	}
 
 	_consumerContainer = append(_consumerContainer, cs)
-	return cs
 }
 
 // 接收到消息
@@ -312,14 +329,31 @@ func (consumer *consumer) onRecieved(msg string) (result bool) {
 	var metaMsg = &mqMessage{}
 	if err := utils.JsonToStruct(msg, metaMsg); err != nil {
 		loggers.GetLogger().Error(err)
-		return false
+		return true
 	}
 
 	if utils.IsEmpty(metaMsg.JsonContent) {
 		return true
 	}
 
-	result = consumer.Consume(metaMsg.JsonContent)
+	isptr := false
+	tp := consumer.MessageType
+	if tp.Kind() == reflect.Ptr {
+		isptr = true
+		tp = tp.Elem()
+	}
+	ptr := reflect.New(tp)
+	if err := utils.JsonToStruct(metaMsg.JsonContent, ptr.Interface()); err != nil {
+		loggers.GetLogger().Error(err)
+		return retry(metaMsg, consumer)
+	}
+
+	msgobj := ptr.Interface()
+	if !isptr {
+		msgobj = ptr.Elem().Interface()
+	}
+
+	result = consumer.Consume(msgobj)
 	if !result {
 		result = retry(metaMsg, consumer)
 	} else {

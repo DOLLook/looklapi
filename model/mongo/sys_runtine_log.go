@@ -25,7 +25,7 @@ type systemRuntineLog struct {
 	HostIp string `bson:"host_ip"`
 
 	// 时间
-	Time time.Time `bson:"time"`
+	Time time.Time `bson:"time" time_format:"SimpleDatetime"`
 
 	// 日志内容
 	Content string `bson:"content"`

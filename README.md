@@ -243,24 +243,39 @@ func testRequest(){
 * worker模式  
 maxRetry 消息最大重试次数, 重试过程中须自行保证消息幂等性
 ```
-func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uint32, parallel bool, maxRetry uint32) *consumer
+func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uint32, parallel bool, maxRetry uint32, messageType reflect.Type, consume func(msg interface{}) bool)
 ```
 * broadcast模式  
 maxRetry 消息最大重试次数, 重试过程中须自行保证消息幂等性
 ```
-func NewBroadcastConsumer(exchange string, maxRetry uint32) *consumer
+func NewBroadcastConsumer(exchange string, maxRetry uint32, messageType reflect.Type, consume func(msg interface{}) bool)
 ```
 
 * 示例
 ```
-// 创建消费者
-var testConsumer = mqutils.NewBroadcastConsumer("your_exchange", 5)
-
-// 初始化
-func init() {
-	// 消费消息
-	testConsumer.Consume = func(msg string) bool {
-		return true
-	}
+// 定义消费者
+type testConsumer struct {
+	messageType reflect.Type  // 接收的消息类型
+    testSrv  srv_isrv.TestSrvInterface `wired:"Autowired"`
 }
+
+// 定义消息体
+type myMsgBody struct{
+}
+
+func init() {
+	consumer := &testConsumer{}  // 创建消费者
+	consumer.messageType = reflect.TypeOf((*myMsgBody)(nil))  // 指定接收的消息类型
+	mqutils.NewBroadcastConsumer(”your_exchange“, 5, consumer.messageType, consumer.consume)
+    wireutils.Bind(reflect.TypeOf((*testConsumer)(nil)).Elem(), consumer, false, 1)
+}
+
+// 消费消息
+func (consumer *testConsumer) consume(msg interface{}) bool {
+	msgbody := msg.(*myMsgBody)
+	// your code...
+    // consumer.testSrv.TestLog("hello")
+	return true
+}
+
 ```

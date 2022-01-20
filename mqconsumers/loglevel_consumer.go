@@ -2,28 +2,25 @@ package mqconsumers
 
 import (
 	"micro-webapi/common/appcontext"
-	"micro-webapi/common/loggers"
 	"micro-webapi/common/mqutils"
-	"micro-webapi/common/utils"
 	"micro-webapi/model/modelimpl"
+	"reflect"
 )
 
-/**
-日志等级监控器
-*/
-var logLevelConsumer = mqutils.NewBroadcastConsumer(LOG_LEVEL_CHANGE, 5)
+// 日志等级监控器
+type logLevelConsumer struct {
+	messageType reflect.Type
+}
 
 func init() {
-	// 消费消息
-	logLevelConsumer.Consume = func(msg string) bool {
-		var content int32
-		if err := utils.JsonToStruct(msg, &content); err != nil {
-			loggers.GetLogger().Error(err)
-			return false
-		}
+	consumer := &logLevelConsumer{}
+	consumer.messageType = reflect.TypeOf((*int)(nil)).Elem()
+	mqutils.NewBroadcastConsumer(LOG_LEVEL_CHANGE, 5, consumer.messageType, consumer.consume)
+}
 
-		logConfig := &modelimpl.ConfigLog{LogLevel: int8(content)}
-		appcontext.GetAppEventPublisher().PublishEvent(logConfig)
-		return true
-	}
+func (consumer *logLevelConsumer) consume(msg interface{}) bool {
+	content := msg.(int)
+	logConfig := &modelimpl.ConfigLog{LogLevel: int8(content)}
+	appcontext.GetAppEventPublisher().PublishEvent(logConfig)
+	return true
 }
