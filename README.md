@@ -3,8 +3,8 @@ looklapi是一个为业务构建的基于kataras/iris的微服务开发脚手架
 * 项目集成了mongodb，redis，并实现了redis基本操作和分布式锁操作。
 * 集成rabbitmq作为消息中间件，实现了rabbitmq连接池，以及消息重试策略，可以根据业务快速定义消费者。
 * 集成consul服务发现，实现了服务注册、健康检查和健康服务缓存刷新，通过简单配置即可进行服务注册和获取。
-* 内置基于事件的应用消息发布工具AppEventPublisher和AppObserver。
-* 内置轻量化ioc容器实现依赖注入及aop切面编程。
+* 完善的应用生命周期管理。内置应用内消息发布和处理接口AppEventPublisher和AppObserver。
+* 内置ioc容器，便捷的依赖注入及aop切面编程。
 * controller api参数的自动映射，以及可选的参数校验器，快速构建web业务。
 * 基于fasthttp的声明式http调用客户端，只需简单声明即可完成远程调用，配合服务发现，快速构建服务间调用。
 
@@ -72,8 +72,8 @@ func (ctr *testController) testLogParamValidator(log string) error {
 ```
 
 ### 2. 依赖注入
-采用无第三方依赖的内置ioc容器实现
-* 容器实现了类型与实例绑定，代理注入(暂未支持多层代理)
+采用内置ioc容器实现(无第三方依赖)
+* 容器实现了类型与实例绑定，使用tag注解注入，自动代理注入(暂未支持多层代理)
 * itype 待绑定的类型
 * target 绑定的实例
 * proxy 指定是否为代理
@@ -111,7 +111,7 @@ func (srv *testSrvImpl) TestLog(log string) error {
 	return nil
 }
 ```
-* controller注入。使用Tag `wired:"Autowired"`自动注入
+* 注入controller。使用Tag `wired:"Autowired"`自动注入，使用springboot的同学应该很熟悉。
 ```
 package irisserver_controller
 
@@ -141,6 +141,7 @@ func (ctr *testController) testLog(log string) error {
 #### service层aop  
 在需要时，可通过可选的代理注入实现aop
 * 定义代理并实现与业务层相同接口，代理层在容器中具有最高优先级，在注入时会优先注入
+（注：代理层是可选的）
 ```
 package srv_proxy
 
