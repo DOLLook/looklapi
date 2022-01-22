@@ -1,5 +1,5 @@
-# micro-webapi
-micro-webapi是一个为业务构建的基于kataras/iris的微服务开发脚手架项目。
+# looklapi
+looklapi是一个为业务构建的基于kataras/iris的微服务开发脚手架项目。
 * 项目集成了mongodb，redis，并实现了redis基本操作和分布式锁操作。
 * 集成rabbitmq作为消息中间件，实现了rabbitmq连接池，以及消息重试策略，可以根据业务快速定义消费者。
 * 集成consul服务发现，实现了服务注册、健康检查和健康服务缓存刷新，通过简单配置即可进行服务注册和获取。

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/robfig/cron/v3"
-	"micro-webapi/common/appcontext"
-	"micro-webapi/common/loggers"
-	"micro-webapi/common/redisutils"
-	"micro-webapi/common/utils"
-	appConfig "micro-webapi/config"
-	"micro-webapi/model/modelimpl"
+	"looklapi/common/appcontext"
+	"looklapi/common/loggers"
+	"looklapi/common/redisutils"
+	"looklapi/common/utils"
+	appConfig "looklapi/config"
+	"looklapi/model/modelimpl"
 	"reflect"
 )
 

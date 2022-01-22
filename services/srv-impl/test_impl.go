@@ -1,9 +1,9 @@
 package srv_impl
 
 import (
-	"micro-webapi/common/loggers"
-	"micro-webapi/common/wireutils"
-	"micro-webapi/services/srv-isrv"
+	"looklapi/common/loggers"
+	"looklapi/common/wireutils"
+	"looklapi/services/srv-isrv"
 	"reflect"
 )
 

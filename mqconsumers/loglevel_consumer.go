@@ -1,9 +1,9 @@
 package mqconsumers
 
 import (
-	"micro-webapi/common/appcontext"
-	"micro-webapi/common/loggers"
-	"micro-webapi/common/mqutils"
+	"looklapi/common/appcontext"
+	"looklapi/common/loggers"
+	"looklapi/common/mqutils"
 	"reflect"
 )
 

@@ -1,6 +1,6 @@
 package modelbase
 
-import "micro-webapi/errs"
+import "looklapi/errs"
 
 // api错误响应
 type errResponse struct {

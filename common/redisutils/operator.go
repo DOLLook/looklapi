@@ -3,7 +3,7 @@ package redisutils
 import (
 	"errors"
 	"github.com/garyburd/redigo/redis"
-	"micro-webapi/common/utils"
+	"looklapi/common/utils"
 	"reflect"
 )
 

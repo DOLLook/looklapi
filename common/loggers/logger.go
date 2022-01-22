@@ -1,10 +1,10 @@
 package loggers
 
 import (
-	"micro-webapi/common/appcontext"
-	"micro-webapi/common/redisutils"
-	"micro-webapi/common/utils"
-	appConfig "micro-webapi/config"
+	"looklapi/common/appcontext"
+	"looklapi/common/redisutils"
+	"looklapi/common/utils"
+	appConfig "looklapi/config"
 	"reflect"
 	"runtime"
 	"strings"

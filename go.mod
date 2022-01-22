@@ -1,4 +1,4 @@
-module micro-webapi
+module looklapi
 
 go 1.17
 

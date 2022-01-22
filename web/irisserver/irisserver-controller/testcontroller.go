@@ -3,12 +3,12 @@ package irisserver_controller
 import (
 	"context"
 	iris "github.com/kataras/iris/v12"
-	"micro-webapi/common/utils"
-	"micro-webapi/common/wireutils"
-	"micro-webapi/errs"
-	"micro-webapi/model/modelbase"
-	"micro-webapi/services/srv-isrv"
-	irisserver_middleware "micro-webapi/web/irisserver/irisserver-middleware"
+	"looklapi/common/utils"
+	"looklapi/common/wireutils"
+	"looklapi/errs"
+	"looklapi/model/modelbase"
+	"looklapi/services/srv-isrv"
+	irisserver_middleware "looklapi/web/irisserver/irisserver-middleware"
 	"net/http"
 	"reflect"
 )

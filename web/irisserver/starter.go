@@ -4,9 +4,9 @@ import (
 	"context"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/requestid"
-	"micro-webapi/common/utils"
-	"micro-webapi/config"
-	"micro-webapi/web/irisserver/irisserver-middleware"
+	"looklapi/common/utils"
+	"looklapi/config"
+	"looklapi/web/irisserver/irisserver-middleware"
 	"sync"
 	"time"
 )

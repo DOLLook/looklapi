@@ -1,9 +1,9 @@
 package mqconsumers
 
 import (
-	"micro-webapi/common/mqutils"
-	serviceDiscovery "micro-webapi/common/service-discovery"
-	"micro-webapi/model/modelimpl"
+	"looklapi/common/mqutils"
+	serviceDiscovery "looklapi/common/service-discovery"
+	"looklapi/model/modelimpl"
 	"reflect"
 )
 

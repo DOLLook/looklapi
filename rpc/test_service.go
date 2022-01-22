@@ -1,8 +1,8 @@
 package rpc
 
 import (
-	"micro-webapi/common/utils"
-	"micro-webapi/model/modelbase"
+	"looklapi/common/utils"
+	"looklapi/model/modelbase"
 	"net/http"
 )
 

@@ -2,7 +2,7 @@ package irisserver
 
 import (
 	"github.com/kataras/iris/v12"
-	"micro-webapi/web/irisserver/irisserver-controller"
+	"looklapi/web/irisserver/irisserver-controller"
 )
 
 // 注册路由

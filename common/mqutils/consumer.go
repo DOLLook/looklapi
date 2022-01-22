@@ -3,11 +3,11 @@ package mqutils
 import (
 	"errors"
 	"github.com/streadway/amqp"
-	"micro-webapi/common/appcontext"
-	"micro-webapi/common/loggers"
-	serviceDiscovery "micro-webapi/common/service-discovery"
-	"micro-webapi/common/utils"
-	"micro-webapi/errs"
+	"looklapi/common/appcontext"
+	"looklapi/common/loggers"
+	serviceDiscovery "looklapi/common/service-discovery"
+	"looklapi/common/utils"
+	"looklapi/errs"
 	"reflect"
 )
 

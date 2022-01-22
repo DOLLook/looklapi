@@ -2,9 +2,9 @@ package irisserver_middleware
 
 import (
 	"github.com/kataras/iris/v12"
-	"micro-webapi/common/loggers"
-	"micro-webapi/errs"
-	"micro-webapi/model/modelbase"
+	"looklapi/common/loggers"
+	"looklapi/errs"
+	"looklapi/model/modelbase"
 	"net/http"
 )
 

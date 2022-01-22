@@ -2,8 +2,8 @@ package redisutils
 
 import (
 	"github.com/garyburd/redigo/redis"
-	"micro-webapi/common/utils"
-	"micro-webapi/config"
+	"looklapi/common/utils"
+	"looklapi/config"
 	"regexp"
 	"strconv"
 	"strings"

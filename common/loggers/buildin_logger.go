@@ -3,9 +3,9 @@ package loggers
 import (
 	"fmt"
 	"log"
-	"micro-webapi/common/appcontext"
-	"micro-webapi/common/utils"
-	"micro-webapi/errs"
+	"looklapi/common/appcontext"
+	"looklapi/common/utils"
+	"looklapi/errs"
 	"reflect"
 	"strings"
 )

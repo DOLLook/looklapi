@@ -1,10 +1,10 @@
 package srv_proxy
 
 import (
-	"micro-webapi/common/loggers"
-	"micro-webapi/common/wireutils"
-	_ "micro-webapi/services/srv-impl" // 导入以执行init
-	"micro-webapi/services/srv-isrv"
+	"looklapi/common/loggers"
+	"looklapi/common/wireutils"
+	_ "looklapi/services/srv-impl" // 导入以执行init
+	"looklapi/services/srv-isrv"
 	"reflect"
 )
 

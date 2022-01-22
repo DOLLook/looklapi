@@ -2,12 +2,12 @@ package loggers
 
 import (
 	"fmt"
-	"micro-webapi/common/appcontext"
-	"micro-webapi/common/mongoutils"
-	"micro-webapi/common/utils"
-	"micro-webapi/config"
-	"micro-webapi/errs"
-	"micro-webapi/model/mongo"
+	"looklapi/common/appcontext"
+	"looklapi/common/mongoutils"
+	"looklapi/common/utils"
+	"looklapi/config"
+	"looklapi/errs"
+	"looklapi/model/mongo"
 	"reflect"
 	"strings"
 )

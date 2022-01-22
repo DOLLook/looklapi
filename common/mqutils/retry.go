@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"micro-webapi/common/loggers"
-	"micro-webapi/common/mongoutils"
-	"micro-webapi/common/utils"
+	"looklapi/common/loggers"
+	"looklapi/common/mongoutils"
+	"looklapi/common/utils"
 	"time"
 )
 

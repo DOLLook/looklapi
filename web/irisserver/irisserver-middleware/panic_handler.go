@@ -3,8 +3,8 @@ package irisserver_middleware
 import (
 	"errors"
 	"github.com/kataras/iris/v12"
-	"micro-webapi/common/loggers"
-	"micro-webapi/model/modelbase"
+	"looklapi/common/loggers"
+	"looklapi/model/modelbase"
 	"net/http"
 )
 

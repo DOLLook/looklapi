@@ -2,8 +2,8 @@ package irisserver_controller
 
 import (
 	"github.com/kataras/iris/v12"
-	"micro-webapi/common/appcontext"
-	serviceDiscovery "micro-webapi/common/service-discovery"
+	"looklapi/common/appcontext"
+	serviceDiscovery "looklapi/common/service-discovery"
 	"net/http"
 )
 

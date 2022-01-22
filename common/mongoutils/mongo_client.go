@@ -4,8 +4,8 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"micro-webapi/common/utils"
-	appConfig "micro-webapi/config"
+	"looklapi/common/utils"
+	appConfig "looklapi/config"
 )
 
 const (

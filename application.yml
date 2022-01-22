@@ -1,5 +1,5 @@
 server:
-  name: micro-webapi
+  name: looklapi
   port: 8001
 
 mysql: mysql://192.168.1.112:3306/test?autoReconnect=true&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&useSSL=false

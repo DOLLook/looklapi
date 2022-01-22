@@ -3,9 +3,9 @@ package service_discovery
 import (
 	"fmt"
 	consulApi "github.com/hashicorp/consul/api"
-	"micro-webapi/common/loggers"
-	"micro-webapi/common/utils"
-	appConfig "micro-webapi/config"
+	"looklapi/common/loggers"
+	"looklapi/common/utils"
+	appConfig "looklapi/config"
 	"strconv"
 	"strings"
 )
