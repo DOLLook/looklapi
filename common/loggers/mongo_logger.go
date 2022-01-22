@@ -7,7 +7,6 @@ import (
 	"micro-webapi/common/utils"
 	"micro-webapi/config"
 	"micro-webapi/errs"
-	"micro-webapi/model/modelimpl"
 	"micro-webapi/model/mongo"
 	"reflect"
 	"strings"
@@ -35,7 +34,7 @@ func (logger *mongoLoger) setLogger() {
 // recieved app event and process.
 // for event publish well, the developers must deal with the panic by their self
 func (logger *mongoLoger) OnApplicationEvent(event interface{}) {
-	if event, ok := event.(*modelimpl.ConfigLog); ok {
+	if event, ok := event.(*ConfigLog); ok {
 		logger.logLevel = logLevel(event.LogLevel)
 	}
 }
@@ -43,7 +42,7 @@ func (logger *mongoLoger) OnApplicationEvent(event interface{}) {
 // regiser to the application event publisher
 // @eventType the event type which the observer intrested in
 func (logger *mongoLoger) Subscribe() {
-	appcontext.GetAppEventPublisher().Subscribe(logger, reflect.TypeOf(&modelimpl.ConfigLog{}))
+	appcontext.GetAppEventPublisher().Subscribe(logger, reflect.TypeOf(&ConfigLog{}))
 }
 
 // 调试日志

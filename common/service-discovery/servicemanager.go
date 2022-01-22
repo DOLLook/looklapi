@@ -4,11 +4,13 @@ import (
 	"fmt"
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/robfig/cron/v3"
+	"micro-webapi/common/appcontext"
 	"micro-webapi/common/loggers"
 	"micro-webapi/common/redisutils"
 	"micro-webapi/common/utils"
 	appConfig "micro-webapi/config"
 	"micro-webapi/model/modelimpl"
+	"reflect"
 )
 
 var svManager *serviceManager
@@ -28,6 +30,18 @@ func init() {
 		hostEndpoint: fmt.Sprintf("%s:%s", utils.HostIp(), appConfig.AppConfig.Server.Port),
 		updateTask:   cron.New(cron.WithSeconds()),
 	}
+	svManager.Subscribe()
+}
+
+// recieved app event and process.
+// for event publish well, the developers must deal with the panic by their self
+func (manager *serviceManager) OnApplicationEvent(event interface{}) {
+	manager.initialize()
+}
+
+// regiser to the application event publisher
+func (manager *serviceManager) Subscribe() {
+	appcontext.GetAppEventPublisher().Subscribe(manager, reflect.TypeOf(appcontext.AppEventBeanInjected(0)))
 }
 
 /**
@@ -40,7 +54,7 @@ func GetServiceManager() *serviceManager {
 /**
 初始服务化管理器
 */
-func (manager *serviceManager) Init() {
+func (manager *serviceManager) initialize() {
 	if manager.isReady {
 		return
 	}

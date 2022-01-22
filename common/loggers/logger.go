@@ -1,8 +1,11 @@
 package loggers
 
 import (
+	"micro-webapi/common/appcontext"
+	"micro-webapi/common/redisutils"
 	"micro-webapi/common/utils"
 	appConfig "micro-webapi/config"
+	"reflect"
 	"runtime"
 	"strings"
 )
@@ -24,6 +27,34 @@ type Logger interface {
 	name() string
 
 	setLogger()
+}
+
+type logManager struct {
+}
+
+// recieved app event and process.
+// for event publish well, the developers must deal with the panic by their self
+func (manager *logManager) OnApplicationEvent(event interface{}) {
+	logConfig := &ConfigLog{}
+	if err := redisutils.Get(redisutils.CONFIG_LOG, logConfig); err != nil {
+		GetLogger().Error(err)
+	} else {
+		appcontext.GetAppEventPublisher().PublishEvent(logConfig)
+	}
+}
+
+// regiser to the application event publisher
+func (manager *logManager) Subscribe() {
+	appcontext.GetAppEventPublisher().Subscribe(manager, reflect.TypeOf(appcontext.AppEventBeanInjected(0)))
+}
+
+func init() {
+	manager := &logManager{}
+	manager.Subscribe()
+}
+
+type ConfigLog struct {
+	LogLevel int8
 }
 
 // 日志等级别名

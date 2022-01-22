@@ -2,8 +2,8 @@ package mqconsumers
 
 import (
 	"micro-webapi/common/appcontext"
+	"micro-webapi/common/loggers"
 	"micro-webapi/common/mqutils"
-	"micro-webapi/model/modelimpl"
 	"reflect"
 )
 
@@ -20,7 +20,7 @@ func init() {
 
 func (consumer *logLevelConsumer) consume(msg interface{}) bool {
 	content := msg.(int)
-	logConfig := &modelimpl.ConfigLog{LogLevel: int8(content)}
+	logConfig := &loggers.ConfigLog{LogLevel: int8(content)}
 	appcontext.GetAppEventPublisher().PublishEvent(logConfig)
 	return true
 }

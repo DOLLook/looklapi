@@ -6,7 +6,6 @@ import (
 	"micro-webapi/common/appcontext"
 	"micro-webapi/common/utils"
 	"micro-webapi/errs"
-	"micro-webapi/model/modelimpl"
 	"reflect"
 	"strings"
 )
@@ -33,7 +32,7 @@ func (logger *buildinLogger) setLogger() {
 // recieved app event and process.
 // for event publish well, the developers must deal with the panic by their self
 func (logger *buildinLogger) OnApplicationEvent(event interface{}) {
-	if event, ok := event.(*modelimpl.ConfigLog); ok {
+	if event, ok := event.(*ConfigLog); ok {
 		logger.logLevel = logLevel(event.LogLevel)
 	}
 }
@@ -41,7 +40,7 @@ func (logger *buildinLogger) OnApplicationEvent(event interface{}) {
 // regiser to the application event publisher
 // @eventType the event type which the observer intrested in
 func (logger *buildinLogger) Subscribe() {
-	appcontext.GetAppEventPublisher().Subscribe(logger, reflect.TypeOf(&modelimpl.ConfigLog{}))
+	appcontext.GetAppEventPublisher().Subscribe(logger, reflect.TypeOf(&ConfigLog{}))
 }
 
 // 调试日志
