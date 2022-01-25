@@ -18,7 +18,7 @@ type controllerMetadata struct {
 	routePath      string         // 路由
 	httpMethod     string         // 方法
 	controller     *reflect.Value // 控制器
-	controllerType reflect.Type   // 控制器类型元素据
+	controllerType reflect.Type   // 控制器类型元数据
 	paramValidator *reflect.Value // 参数验证
 }
 
