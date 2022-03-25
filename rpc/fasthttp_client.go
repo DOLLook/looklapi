@@ -13,7 +13,7 @@ var _client *fasthttp.Client
 
 func init() {
 	_client = &fasthttp.Client{
-		Name:                     "order-platform",
+		Name:                     "looklapi",
 		NoDefaultUserAgentHeader: false,
 		TLSConfig:                &tls.Config{InsecureSkipVerify: true},
 		MaxConnsPerHost:          2000,

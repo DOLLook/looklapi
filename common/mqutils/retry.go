@@ -126,6 +126,16 @@ func retrySuccess(metaMsg *mqMessage, csType consumerType) {
 		return
 	}
 
+	defer func() {
+		if err := recover(); err != nil {
+			if tr, ok := err.(error); ok {
+				fmt.Println(tr.Error())
+			} else if msg, ok := err.(string); ok {
+				fmt.Println(msg)
+			}
+		}
+	}()
+
 	filter := bson.D{
 		{"guid", metaMsg.Guid},
 		{"timespan", metaMsg.Timespan},
@@ -140,10 +150,8 @@ func retrySuccess(metaMsg *mqMessage, csType consumerType) {
 		{"$set", bson.D{{"status", 1}, {"update_time", time.Now()}}},
 	}
 
-	if result, err := mongoutils.GetCollection(_RetryCollectionName).UpdateOne(nil, filter, updates); err == nil {
-		fmt.Println(result)
-	} else {
-		loggers.GetLogger().Error(err)
+	if _, err := mongoutils.GetCollection(_RetryCollectionName).UpdateOne(nil, filter, updates); err != nil {
+		fmt.Println(err.Error())
 	}
 }
 

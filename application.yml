@@ -1,28 +1,5 @@
+profile: dev
+
 server:
   name: looklapi
   port: 8001
-
-mysql: mysql://192.168.1.112:3306/test?autoReconnect=true&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&useSSL=false
-
-mongodb_uri: mongodb://127.0.0.1:27018,127.0.0.1:27019/test?replicaSet=rs0
-
-redis:
-  host: 127.0.0.1
-  port: 6379
-  password: 123456
-  timeout: 10000
-
-rabbitmq:
-  address: amqp://guest:guest@127.0.0.1:5672/test
-
-consul:
-  host: 127.0.0.1
-  port: 8500
-  secure: false
-  health-check: /service/healthCheck
-  timeout: 5s
-  interval: 10s
-  deregister-critical-service-after: 600s
-
-logger:
-  default: buildin

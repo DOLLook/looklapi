@@ -10,13 +10,18 @@ import (
 // 应用程序配置
 var AppConfig = &appConfig
 
-// 程序配置
-var appConfig = struct {
+type commConfig struct {
+	Profile string `yaml:"profile"`
+
 	Server struct {
 		Name string `yaml:"name"`
 		Port string `yaml:"port"`
 	} `yaml:"server"`
+}
 
+// 程序配置
+var appConfig = struct {
+	*commConfig
 	MySql      string `yaml:"mysql"`
 	MongodbUri string `yaml:"mongodb_uri"`
 
@@ -54,7 +59,39 @@ func init() {
 		return
 	}
 
-	if err := yaml.Unmarshal(bytes, AppConfig); err != nil {
+	cc := &commConfig{}
+	if err := yaml.Unmarshal(bytes, cc); err != nil {
 		fmt.Println(err)
+		return
 	}
+
+	if cc.Profile != "prod" {
+		devConfbytes, err := ioutil.ReadFile("application-dev.yml")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if err := yaml.Unmarshal(devConfbytes, AppConfig); err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		AppConfig.commConfig = cc
+
+	} else {
+		prodConfbytes, err := ioutil.ReadFile("application-prod.yml")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if err := yaml.Unmarshal(prodConfbytes, AppConfig); err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		AppConfig.commConfig = cc
+	}
+
 }

@@ -65,7 +65,25 @@ func (logger *mongoLoger) Debug(msg string) {
 	log.ClassName = fileName
 	log.Stacktrace = fmt.Sprintf("%s\n\t%s:%d", methodName, fullFileName, lineNum)
 
-	go mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log)
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Println(log.Content)
+				fmt.Println(log.Stacktrace)
+				if tr, ok := err.(error); ok {
+					fmt.Println(tr.Error())
+				} else if msg, ok := err.(string); ok {
+					fmt.Println(msg)
+				}
+			}
+		}()
+
+		if _, err := mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log); err != nil {
+			fmt.Println(log.Content)
+			fmt.Println(log.Stacktrace)
+			fmt.Println(err.Error())
+		}
+	}()
 }
 
 // 提示
@@ -88,7 +106,25 @@ func (logger *mongoLoger) Info(msg string) {
 	log.ClassName = fileName
 	log.Stacktrace = fmt.Sprintf("%s\n\t%s:%d", methodName, fullFileName, lineNum)
 
-	go mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log)
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Println(log.Content)
+				fmt.Println(log.Stacktrace)
+				if tr, ok := err.(error); ok {
+					fmt.Println(tr.Error())
+				} else if msg, ok := err.(string); ok {
+					fmt.Println(msg)
+				}
+			}
+		}()
+
+		if _, err := mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log); err != nil {
+			fmt.Println(log.Content)
+			fmt.Println(log.Stacktrace)
+			fmt.Println(err.Error())
+		}
+	}()
 }
 
 // 警告
@@ -111,7 +147,25 @@ func (logger *mongoLoger) Warn(msg string) {
 	log.ClassName = fileName
 	log.Stacktrace = fmt.Sprintf("%s\n\t%s:%d", methodName, fullFileName, lineNum)
 
-	go mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log)
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Println(log.Content)
+				fmt.Println(log.Stacktrace)
+				if tr, ok := err.(error); ok {
+					fmt.Println(tr.Error())
+				} else if msg, ok := err.(string); ok {
+					fmt.Println(msg)
+				}
+			}
+		}()
+
+		if _, err := mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log); err != nil {
+			fmt.Println(log.Content)
+			fmt.Println(log.Stacktrace)
+			fmt.Println(err.Error())
+		}
+	}()
 }
 
 // 错误日志
@@ -153,9 +207,20 @@ func (logger *mongoLoger) Error(err error) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-
+				fmt.Println(log.Content)
+				fmt.Println(log.Stacktrace)
+				if tr, ok := err.(error); ok {
+					fmt.Println(tr.Error())
+				} else if msg, ok := err.(string); ok {
+					fmt.Println(msg)
+				}
 			}
 		}()
-		mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log)
+
+		if _, err := mongoutils.GetCollection(log.TbCollName()).InsertOne(nil, log); err != nil {
+			fmt.Println(log.Content)
+			fmt.Println(log.Stacktrace)
+			fmt.Println(err.Error())
+		}
 	}()
 }
