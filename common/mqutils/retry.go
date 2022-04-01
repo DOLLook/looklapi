@@ -94,6 +94,7 @@ func retryBroadcast(metaMsg *mqMessage, exchange string, maxRetry uint32) bool {
 
 	// 写入mongodb
 	mqretry := &mqMsgRetry{
+		Id:          primitive.NewObjectID().Hex(),
 		PublishType: int32(_Broadcast),
 		Key:         exchange,
 		Guid:        metaMsg.Guid,
@@ -222,8 +223,7 @@ func addOrUpdate(model *mqMsgRetry) bool {
 
 		model.CurrentRetry = 0
 		model.UpdateTime = time.Now()
-		if inResult, err := collection.InsertOne(nil, model); err == nil {
-			fmt.Println(inResult)
+		if _, err := collection.InsertOne(nil, model); err == nil {
 			result = true
 		}
 	} else {
@@ -233,8 +233,7 @@ func addOrUpdate(model *mqMsgRetry) bool {
 			{"$set", bson.D{{"update_time", time.Now()}}},
 		}
 
-		if updateResult, err := collection.UpdateOne(nil, filter, updates); err == nil {
-			fmt.Println(updateResult)
+		if _, err := collection.UpdateOne(nil, filter, updates); err == nil {
 			result = true
 		}
 	}

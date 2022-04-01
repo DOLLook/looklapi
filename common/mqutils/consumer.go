@@ -9,6 +9,7 @@ import (
 	"looklapi/common/utils"
 	"looklapi/errs"
 	"reflect"
+	"time"
 )
 
 type consumerBinder struct {
@@ -312,6 +313,8 @@ func (consumer *consumer) onRecieved(msg string) (result bool) {
 				loggers.GetLogger().Error(errors.New(msg))
 			}
 
+			// 返回false 以便连续错误日志发现错误 若未成功写入重试信息可能导致无限重入 sleep 2sec 降低重入压力
+			time.Sleep(2000 * time.Millisecond)
 			result = false
 		}
 	}()
@@ -353,7 +356,22 @@ func (consumer *consumer) onRecieved(msg string) (result bool) {
 		msgobj = ptr.Elem().Interface()
 	}
 
-	result = consumer.Consume(msgobj)
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				if tr, ok := err.(error); ok {
+					loggers.GetLogger().Error(tr)
+				} else if msg, ok := err.(string); ok {
+					loggers.GetLogger().Error(errors.New(msg))
+				}
+
+				result = false
+			}
+		}()
+
+		result = consumer.Consume(msgobj)
+	}()
+
 	if !result {
 		result = retry(metaMsg, consumer)
 	} else {
