@@ -57,7 +57,7 @@ func retryWorker(metaMsg *mqMessage, routeKey string, maxRetry uint32) bool {
 	if mqRetry.Timestamp.UnixNano()/1000000+30*60*1000 <= time.Now().UnixNano()/1000000 {
 		// 30分钟未成功消费的放弃掉
 		errmsg := fmt.Sprintf("routekey:%s, guid:%s, timespan:%s 超过30分钟未消费",
-			routeKey, mqRetry.Guid, mqRetry.Timestamp.Format("1970-01-01 00:00:00"))
+			routeKey, mqRetry.Guid, mqRetry.Timestamp.Format("2006-01-02 15:04:05"))
 
 		loggers.GetLogger().Warn(errmsg)
 		return true
@@ -86,7 +86,7 @@ func retryBroadcast(metaMsg *mqMessage, exchange string, maxRetry uint32) bool {
 	if metaMsg.Timespan.UnixNano()/1000000+5*60*1000 <= time.Now().UnixNano()/1000000 {
 		// 5分钟未成功消费的广播消息放弃掉
 		errmsg := fmt.Sprintf("exchange:%s, guid:%s, timespan:%s 超过5分钟未消费",
-			exchange, metaMsg.Guid, metaMsg.Timespan.Format("1970-01-01 00:00:00"))
+			exchange, metaMsg.Guid, metaMsg.Timespan.Format("2006-01-02 15:04:05"))
 
 		loggers.GetLogger().Warn(errmsg)
 		return true
@@ -109,7 +109,7 @@ func retryBroadcast(metaMsg *mqMessage, exchange string, maxRetry uint32) bool {
 		// 发生错误时返回true, 防止死循环
 		result = true
 		errmsg := fmt.Sprintf("消息重试失败, exchange:%s, guid:%s, timespan:%s.",
-			exchange, metaMsg.Guid, metaMsg.Timespan.Format("1970-01-01 00:00:00"))
+			exchange, metaMsg.Guid, metaMsg.Timespan.Format("2006-01-02 15:04:05"))
 		loggers.GetLogger().Warn(errmsg)
 	} else {
 		// 等待两秒入队重试

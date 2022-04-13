@@ -20,6 +20,19 @@ func Set(key string, val interface{}) error {
 	return err
 }
 
+func SetEx(key string, val interface{}, secs int) error {
+	if utils.IsEmpty(key) || val == nil || secs < 1 {
+		return errors.New("invalid arguments")
+	}
+
+	val = objConvertToJson(val)
+
+	conn := getConn(key)
+	_, err := conn.Do("SET", key, val, "EX", secs)
+
+	return err
+}
+
 func Get(key string, valPtr interface{}) error {
 	if utils.IsEmpty(key) {
 		return errors.New("invalid key")

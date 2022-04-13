@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"net/url"
 	"strings"
 )
 
@@ -33,15 +34,28 @@ func Base64Decode(base64str string) string {
 	return ""
 }
 
+// base64 url编码
+func Base64UrlEncode(str string) string {
+	return base64.URLEncoding.EncodeToString([]byte(str))
+}
+
+// base64 url解码
+func Base64UrlDecode(str string) string {
+	if result, err := base64.URLEncoding.DecodeString(str); err == nil {
+		return string(result)
+	}
+	return ""
+}
+
 // url编码
 func UrlEncode(str string) string {
-	return base64.URLEncoding.EncodeToString([]byte(str))
+	return url.QueryEscape(str)
 }
 
 // url解码
 func UrlDecode(str string) string {
-	if result, err := base64.URLEncoding.DecodeString(str); err == nil {
-		return string(result)
+	if result, err := url.QueryUnescape(str); err == nil {
+		return result
 	}
 	return ""
 }
