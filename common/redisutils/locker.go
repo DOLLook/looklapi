@@ -65,6 +65,11 @@ func lock(lockName string, holdSecs int32) (bool, int64, error) {
 
 	lockName = getLockName(lockName)
 	conn := getConn0(0)
+	if conn.Err() != nil {
+		return false, 0, conn.Err()
+	}
+	defer conn.Close()
+
 	timeStamp := time.Now().UnixNano() / 1000000
 	reply, err := conn.Do("SET", lockName, timeStamp, "EX", holdSecs, "NX")
 
@@ -87,6 +92,11 @@ func UnLock(lockName string, timeStamp int64) error {
 
 	script := redis.NewScript(1, scriptStr)
 	conn := getConn0(0)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
 	_, err := script.Do(conn, lockName, timeStamp)
 	return err
 }

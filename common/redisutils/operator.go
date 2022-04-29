@@ -15,6 +15,11 @@ func Set(key string, val interface{}) error {
 	val = objConvertToJson(val)
 
 	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
 	_, err := conn.Do("SET", key, val)
 
 	return err
@@ -28,6 +33,11 @@ func SetEx(key string, val interface{}, secs int) error {
 	val = objConvertToJson(val)
 
 	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
 	_, err := conn.Do("SET", key, val, "EX", secs)
 
 	return err
@@ -43,6 +53,11 @@ func Get(key string, valPtr interface{}) error {
 	}
 
 	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
 	reply, err := conn.Do("GET", key)
 	if err != nil {
 		return err
@@ -59,6 +74,11 @@ func HashSet(key string, hashField interface{}, val interface{}) error {
 	val = objConvertToJson(val)
 
 	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
 	_, err := conn.Do("HSET", key, hashField, val)
 	return err
 }
@@ -73,6 +93,11 @@ func HashGet(key string, hashField interface{}, valPtr interface{}) error {
 	}
 
 	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
 	reply, err := conn.Do("HGET", key, hashField)
 	if err != nil {
 		return err
@@ -88,6 +113,11 @@ func Exist(key string) (bool, error) {
 	}
 
 	conn := getConn(key)
+	if conn.Err() != nil {
+		return false, conn.Err()
+	}
+	defer conn.Close()
+
 	reply, err := conn.Do("EXISTS", key)
 	if err != nil {
 		return false, err
@@ -107,6 +137,11 @@ func HExist(key string, hashField interface{}) (bool, error) {
 	}
 
 	conn := getConn(key)
+	if conn.Err() != nil {
+		return false, conn.Err()
+	}
+	defer conn.Close()
+
 	reply, err := conn.Do("HEXISTS", key, hashField)
 	if err != nil {
 		return false, err
@@ -126,6 +161,11 @@ func Del(key string) error {
 	}
 
 	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
 	_, err := conn.Do("DEL", key)
 	return err
 }
@@ -137,6 +177,11 @@ func HDel(key string, hashField interface{}) error {
 	}
 
 	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
 	_, err := conn.Do("HDEL", key, hashField)
 	return err
 }
