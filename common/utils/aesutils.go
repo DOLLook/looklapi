@@ -69,7 +69,7 @@ func AesEcrypt(origData []byte, key []byte, iv []byte) ([]byte, error) {
 }
 
 //实现解密
-func AesDecrypt(cypted []byte, key []byte, iv []byte) ([]byte, error) {
+func AesDecrypt(cypted []byte, key []byte, iv []byte) (origData []byte, e error) {
 	//创建加密算法实例
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -88,7 +88,21 @@ func AesDecrypt(cypted []byte, key []byte, iv []byte) ([]byte, error) {
 		blockMode = cipher.NewCBCDecrypter(block, key[:block.BlockSize()])
 	}
 
-	origData := make([]byte, len(cypted))
+	origData = make([]byte, len(cypted))
+
+	defer func() {
+		if err := recover(); err != nil {
+			if throw, ok := err.(error); ok {
+				origData = nil
+				e = throw
+				return
+			} else if msg, ok := err.(string); ok {
+				origData = nil
+				e = errors.New(msg)
+				return
+			}
+		}
+	}()
 	//这个函数也可以用来解密
 	blockMode.CryptBlocks(origData, cypted)
 	//去除填充字符串
