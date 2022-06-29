@@ -1,4 +1,4 @@
-package mqconsumers
+package mqutils
 
 // 交换器枚举
 type RabbitMqExchange = string

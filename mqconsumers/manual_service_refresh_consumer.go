@@ -15,7 +15,7 @@ type manualServiceRefreshConsumer struct {
 func init() {
 	consumer := &manualServiceRefreshConsumer{}
 	consumer.messageType = reflect.TypeOf((*modelimpl.ManualService)(nil))
-	mqutils.NewBroadcastConsumer(MANUAL_SERVICE_REFRESH, 5, consumer.messageType, consumer.consume)
+	mqutils.NewBroadcastConsumer(mqutils.MANUAL_SERVICE_REFRESH, 5, consumer.messageType, consumer.consume)
 }
 
 func (consumer *manualServiceRefreshConsumer) consume(msg interface{}) bool {

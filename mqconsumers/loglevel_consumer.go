@@ -15,7 +15,7 @@ type logLevelConsumer struct {
 func init() {
 	consumer := &logLevelConsumer{}
 	consumer.messageType = reflect.TypeOf((*int)(nil)).Elem()
-	mqutils.NewBroadcastConsumer(LOG_LEVEL_CHANGE, 5, consumer.messageType, consumer.consume)
+	mqutils.NewBroadcastConsumer(mqutils.LOG_LEVEL_CHANGE, 5, consumer.messageType, consumer.consume)
 }
 
 func (consumer *logLevelConsumer) consume(msg interface{}) bool {
