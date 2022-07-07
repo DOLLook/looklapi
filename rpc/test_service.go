@@ -22,6 +22,10 @@ func (srv *TestService) SrvName() string {
 	return string(utils.TEST_SERVICE)
 }
 
+func (srv *TestService) RequestInterceptor() []interceptor {
+	return nil
+}
+
 func init() {
 	register(&TestService{})
 }

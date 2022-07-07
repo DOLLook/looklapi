@@ -16,6 +16,7 @@ import (
 
 type RpcService interface {
 	SrvName() string
+	RequestInterceptor() []interceptor
 }
 
 var srvMap = make(map[string]RpcService)
@@ -55,12 +56,12 @@ func srvGenerator(srv RpcService) {
 	for i := 0; i < srvTyp.NumField(); i++ {
 		fn := srvTyp.Field(i)
 		reqMethod, reqRoute, aliasSlice := apiDefCheck(fn, srv.SrvName())
-		fnWrap := reflect.MakeFunc(fn.Type, httpRpcWrap(srv.SrvName(), fn.Type, reqMethod, reqRoute, aliasSlice))
+		fnWrap := reflect.MakeFunc(fn.Type, httpRpcWrap(srv.SrvName(), srv.RequestInterceptor(), fn.Type, reqMethod, reqRoute, aliasSlice))
 		srvVal.Field(i).Set(fnWrap)
 	}
 }
 
-func httpRpcWrap(srvName string, fntyp reflect.Type, reqMethod string, reqRoute string, aliasSlice []string) func(args []reflect.Value) (results []reflect.Value) {
+func httpRpcWrap(srvName string, reqInterceptors []interceptor, fntyp reflect.Type, reqMethod string, reqRoute string, aliasSlice []string) func(args []reflect.Value) (results []reflect.Value) {
 
 	return func(args []reflect.Value) (results []reflect.Value) {
 
@@ -93,6 +94,20 @@ func httpRpcWrap(srvName string, fntyp reflect.Type, reqMethod string, reqRoute 
 		alias := aliasSlice
 		header, body, urlParamSlice := reqParamGenerator(funtyp, args, alias)
 
+		var allInterceptor []interceptor
+		allInterceptor = append(allInterceptor, gloabalReqInterceptor...)
+		allInterceptor = append(allInterceptor, reqInterceptors...)
+		reqTemplate := &requestTemplate{
+			header:        header,
+			body:          body,
+			urlParamSlice: urlParamSlice,
+		}
+		if len(allInterceptor) > 0 {
+			for _, it := range allInterceptor {
+				it(reqTemplate)
+			}
+		}
+
 		url, err := getEndpoint(serviceName)
 		if err != nil {
 			results = append(results, reflect.ValueOf(err))
@@ -100,7 +115,7 @@ func httpRpcWrap(srvName string, fntyp reflect.Type, reqMethod string, reqRoute 
 		}
 		url = url + route
 
-		if resp, err := doRequest(method, url, header, body, urlParamSlice); err != nil {
+		if resp, err := doRequest(method, url, reqTemplate.header, reqTemplate.body, reqTemplate.urlParamSlice); err != nil {
 			results = append(results, reflect.ValueOf(err))
 			return
 		} else if err := json.Unmarshal(resp, respReciever.Interface()); err != nil {

@@ -235,6 +235,8 @@ func parse(reply interface{}, valPtr interface{}) (err error) {
 		if bytes, ok := reply.([]byte); ok {
 			valStr := string(bytes)
 			err = utils.JsonToStruct(valStr, valPtr)
+		} else if sl, ok := reply.([]interface{}); ok {
+			err = redis.ScanSlice(sl, valPtr)
 		} else {
 			err = errors.New("invalid reply type")
 		}
