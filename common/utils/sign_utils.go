@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 	"sort"
 	"strings"
 )
