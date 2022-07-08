@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"looklapi/common/loggers"
 	"looklapi/common/mongoutils"
 	"looklapi/common/utils"
@@ -179,7 +180,7 @@ func getRetryCount(guid string, timespan time.Time, isBroadcast bool) int32 {
 	singleOne := mongoutils.GetCollection(_RetryCollectionName).FindOne(nil, filter)
 	msgRetry := &mqMsgRetry{}
 
-	if err := singleOne.Decode(msgRetry); err == nil {
+	if err := singleOne.Decode(msgRetry); err == nil || err == mongo.ErrNoDocuments {
 		result = msgRetry.CurrentRetry
 	} else {
 		result = utils.MaxInt32
