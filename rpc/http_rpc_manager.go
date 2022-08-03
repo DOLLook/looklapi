@@ -274,7 +274,8 @@ func reqParamGenerator(fntyp reflect.Type, args []reflect.Value, alias []string)
 		if ptyp == headerType {
 			if !arg.IsNil() {
 				h := arg.Interface().(http.Header)
-				header = &h
+				headerWrap := h.Clone()
+				header = &headerWrap
 			}
 			continue
 		}
