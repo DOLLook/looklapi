@@ -21,6 +21,8 @@ const (
 )
 
 const HttpRequestHeader = "Http-Request-Header"
+const HttpContextStore = "Http-Context-Store"
+const ControllerRespContent = "controller-resp-content"
 
 type EnumServiceName string
 

@@ -17,6 +17,7 @@ func Start() {
 	app.UseRouter(requestid.New())
 	app.UseRouter(irisserver_middleware.PanicHandler())
 	app.UseRouter(irisserver_middleware.CorsHandler())
+	app.DoneGlobal(irisserver_middleware.ControllerRespWriter())
 	app.DoneGlobal(irisserver_middleware.ErrHandler())
 	app.UseError(irisserver_middleware.ErrHandler())
 

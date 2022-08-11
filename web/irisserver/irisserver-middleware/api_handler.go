@@ -95,11 +95,12 @@ func apiSrvHandler(ctx iris.Context) {
 		ctx.Next()
 		return
 	} else if resp != nil {
-		if _, err := ctx.JSON(resp); err != nil {
-			ctx.SetErr(err)
-			ctx.Next()
-			return
-		}
+		ctx.Values().SetImmutable(utils.ControllerRespContent, resp)
+		//if _, err := ctx.JSON(resp); err != nil {
+		//	ctx.SetErr(err)
+		//	ctx.Next()
+		//	return
+		//}
 	}
 
 	ctx.Next()
@@ -317,9 +318,13 @@ func reqApiParams(ctx iris.Context, ctrMetadata *controllerMetadata) ([]reflect.
 			nonReqParamCount++
 
 			myCtx := context.WithValue(context.Background(), utils.HttpRequestHeader, ctx.Request().Header)
-			for _, entry := range *ctx.Values() {
-				myCtx = context.WithValue(myCtx, entry.Key, entry.Value())
-			}
+
+			//for _, entry := range *ctx.Values() {
+			//	myCtx = context.WithValue(myCtx, entry.Key, entry.Value())
+			//}
+
+			storeWrapper := &memStoreWrapper{ctx.Values()}
+			myCtx = context.WithValue(myCtx, utils.HttpContextStore, storeWrapper)
 
 			ctrParams = append(ctrParams, reflect.ValueOf(myCtx))
 			continue
