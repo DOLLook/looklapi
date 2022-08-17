@@ -15,6 +15,15 @@ func ControllerRespWriter() iris.Handler {
 			ctxStore.Remove(key)
 		}
 
+		// 清空上下文临时数据
+		if ctxStore == nil {
+			ctxStore = context.Values()
+		}
+		if ctxStore != nil {
+			// 执行清空上下文临时数据
+			//ctxStore.Remove("tempDataKey")
+		}
+
 		context.Next()
 	}
 }

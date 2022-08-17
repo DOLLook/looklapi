@@ -95,7 +95,7 @@ func apiSrvHandler(ctx iris.Context) {
 		ctx.Next()
 		return
 	} else if resp != nil {
-		ctx.Values().SetImmutable(utils.ControllerRespContent, resp)
+		ctx.Values().Set(controllerRespContent, resp)
 		//if _, err := ctx.JSON(resp); err != nil {
 		//	ctx.SetErr(err)
 		//	ctx.Next()

@@ -3,7 +3,10 @@ package irisserver_middleware
 import (
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/core/memstore"
-	"looklapi/common/utils"
+)
+
+const (
+	controllerRespContent = "controller-resp-content"
 )
 
 // 从context中获取可能存在的controller响应
@@ -17,7 +20,7 @@ func getControllerResp(context iris.Context) (ctxStore *memstore.Store, key stri
 		return nil, "", nil
 	}
 
-	key = utils.ControllerRespContent
+	key = controllerRespContent
 	resp = ctxStore.Get(key)
 	return
 }
