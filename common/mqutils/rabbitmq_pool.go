@@ -316,7 +316,7 @@ func clearIdlPubConn() {
 				utils.SliceRemoveByIndex(&_rabbitmqConnPool.pubChs, i)
 				item.Conn.decChan()
 
-				if item.Status == _Timeout {
+				if item.Status == _Timeout && !item.Conn.Conn.IsClosed() {
 					if closeErr := item.Channel.Close(); closeErr != nil {
 						loggers.GetLogger().Error(closeErr)
 					}
