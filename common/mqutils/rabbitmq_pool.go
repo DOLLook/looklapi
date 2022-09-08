@@ -317,7 +317,7 @@ func clearIdlPubConn() {
 				item.Conn.decChan()
 
 				if item.Status == _Timeout && !item.Conn.Conn.IsClosed() {
-					if closeErr := item.Channel.Close(); closeErr != nil {
+					if closeErr := item.Channel.Close(); closeErr != nil && closeErr != amqp.ErrClosed {
 						loggers.GetLogger().Error(closeErr)
 					}
 				}
