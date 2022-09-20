@@ -20,3 +20,8 @@ func (srv *testSrvImpl) TestLog(log string) error {
 	loggers.GetLogger().Debug("test log: " + log)
 	return nil
 }
+
+func (srv *testSrvImpl) TestLogProxyVersion(log string) error {
+	loggers.GetLogger().Debug("test log: " + log)
+	return nil
+}

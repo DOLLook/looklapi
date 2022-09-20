@@ -10,7 +10,7 @@ import (
 
 // testsrv 代理
 type testSrvProxy struct {
-	srv srv_isrv.TestSrvInterface `wired:"Autowired"`
+	srv_isrv.TestSrvInterface `wired:"Autowired"`
 }
 
 func init() {
@@ -20,14 +20,14 @@ func init() {
 }
 
 // 代理实现
-func (proxy *testSrvProxy) TestLog(log string) error {
-	loggers.GetLogger().Debug("before log")
+func (proxy *testSrvProxy) TestLogProxyVersion(log string) error {
+	loggers.GetLogger().Debug("before proxy log")
 
-	if err := proxy.srv.TestLog(log); err != nil {
+	if err := proxy.TestSrvInterface.TestLogProxyVersion(log); err != nil {
 		return err
 	}
 
-	loggers.GetLogger().Debug("after log")
+	loggers.GetLogger().Debug("after proxy log")
 
 	return nil
 }
