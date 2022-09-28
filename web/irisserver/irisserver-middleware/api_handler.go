@@ -30,10 +30,10 @@ var ctrDataMap = make(map[string]*controllerMetadata)
 // httpMethod 请求方式
 // controller 控制器
 // paramValidator 控制器参数校验
-func RegisterController(irisApp *iris.Application, apiParty string, routePath string, httpMethod string, controller interface{}, paramValidator interface{}, beforeHandlers []iris.Handler, afterHandlers []iris.Handler) {
+func RegisterController(apiBuilder iris.Party, apiParty string, routePath string, httpMethod string, controller interface{}, paramValidator interface{}, beforeHandlers []iris.Handler, afterHandlers []iris.Handler) {
 
-	if irisApp == nil {
-		panic(errors.New("irisapp must not be nil"))
+	if apiBuilder == nil {
+		panic(errors.New("apiBuilder must not be nil"))
 	}
 
 	apiParty, routePath = routeCheck(apiParty, routePath)
@@ -45,7 +45,7 @@ func RegisterController(irisApp *iris.Application, apiParty string, routePath st
 	ctrValuePtr, ctrType := controllerCheck(controller)
 	paramValidatorValuePtr := paramValidatorCheck(paramValidator, ctrType)
 
-	_ = registerRoute(irisApp, apiParty, routePath, httpMethod, beforeHandlers, afterHandlers)
+	_ = registerRoute(apiBuilder, apiParty, routePath, httpMethod, beforeHandlers, afterHandlers)
 
 	ctrMetadata := &controllerMetadata{
 		party:          apiParty,
@@ -246,8 +246,11 @@ func paramValidatorCheck(paramValidator interface{}, ctrType reflect.Type) *refl
 	return &pvalidator
 }
 
-func registerRoute(irisApp *iris.Application, apiParty string, routePath string, httpMethod string, beforeHandlers []iris.Handler, afterHandlers []iris.Handler) iris.Party {
-	party := irisApp.Party(apiParty)
+func registerRoute(apiBuilder iris.Party, apiParty string, routePath string, httpMethod string, beforeHandlers []iris.Handler, afterHandlers []iris.Handler) iris.Party {
+	party := apiBuilder
+	if apiBuilder.IsRoot() {
+		party = apiBuilder.Party(apiParty)
+	}
 
 	var handlerSlice []iris.Handler
 	if len(beforeHandlers) > 0 {

@@ -2,9 +2,12 @@ package redisutils
 
 import (
 	"errors"
+	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"looklapi/common/utils"
 	"reflect"
+	"strings"
+	"time"
 )
 
 func Set(key string, val interface{}) error {
@@ -106,6 +109,144 @@ func HashGet(key string, hashField interface{}, valPtr interface{}) error {
 	return parse(reply, valPtr)
 }
 
+func HashGetValues(key string, hashFields interface{}, slicePtr interface{}) error {
+	if utils.IsEmpty(key) || hashFields == nil {
+		return errors.New("invalid key or hashFields")
+	}
+
+	if slicePtr == nil {
+		return errors.New("slicePtr must not be nil")
+	}
+
+	sliceValRef := reflect.ValueOf(slicePtr)
+	if sliceValRef.Kind() != reflect.Ptr || sliceValRef.Elem().Kind() != reflect.Slice {
+		return errors.New("slicePtr must be a slice pointer")
+	}
+
+	fileds := reflect.ValueOf(hashFields)
+	if fileds.Kind() != reflect.Slice {
+		return errors.New("hashFields must be a hash filed slice")
+	}
+
+	keys := make([]interface{}, 0)
+	for i := 0; i < fileds.Len(); i++ {
+		keys = append(keys, fileds.Index(i).Interface())
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	cmd := fmt.Sprintf("local rst={}; for i,v in pairs(KEYS) do rst[i]=redis.call('hget','%s',v) end; return rst;", key)
+	reply, err := redis.NewScript(len(keys), cmd).Do(conn, keys...)
+	if err != nil {
+		return err
+	}
+
+	sliceElem := sliceValRef.Elem().Type().Elem()
+	if sliceElem.Kind() == reflect.Ptr {
+		sliceElem = sliceElem.Elem()
+	}
+
+	if sliceElem.Kind() == reflect.Struct {
+		// struct need use string to collect redis result, then use json to Unmarshal
+		stringSlice := make([]string, 0)
+		if err := parse(reply, &stringSlice); err != nil {
+			return err
+		}
+
+		if len(stringSlice) > 0 {
+			jsonStr := fmt.Sprintf("[%s]", strings.Join(stringSlice, ","))
+			if err := utils.JsonToStruct(jsonStr, slicePtr); err != nil {
+				return err
+			} else {
+				return nil
+			}
+		}
+
+		return nil
+	} else {
+		return parse(reply, slicePtr)
+	}
+}
+
+func HashKeys(key string, valPtr interface{}) error {
+	if utils.IsEmpty(key) {
+		return errors.New("invalid key")
+	}
+
+	if valPtr == nil {
+		return errors.New("valPtr must not be nil")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	reply, err := conn.Do("HKEYS", key)
+	if err != nil {
+		return err
+	}
+
+	return parse(reply, valPtr)
+}
+
+func HashValues(key string, slicePtr interface{}) error {
+	if utils.IsEmpty(key) {
+		return errors.New("invalid key")
+	}
+
+	if slicePtr == nil {
+		return errors.New("slicePtr must not be nil")
+	}
+
+	sliceValRef := reflect.ValueOf(slicePtr)
+	if sliceValRef.Kind() != reflect.Ptr || sliceValRef.Elem().Kind() != reflect.Slice {
+		return errors.New("slicePtr must be a slice pointer")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	reply, err := conn.Do("HVALS", key)
+	if err != nil {
+		return err
+	}
+
+	sliceElem := sliceValRef.Elem().Type().Elem()
+	if sliceElem.Kind() == reflect.Ptr {
+		sliceElem = sliceElem.Elem()
+	}
+
+	if sliceElem.Kind() == reflect.Struct {
+		// struct need use string to collect redis result, then use json to Unmarshal
+		stringSlice := make([]string, 0)
+		if err := parse(reply, &stringSlice); err != nil {
+			return err
+		}
+
+		if len(stringSlice) > 0 {
+			jsonStr := fmt.Sprintf("[%s]", strings.Join(stringSlice, ","))
+			if err := utils.JsonToStruct(jsonStr, slicePtr); err != nil {
+				return err
+			} else {
+				return nil
+			}
+		}
+
+		return nil
+	} else {
+		return parse(reply, slicePtr)
+	}
+}
+
 // 判断key是否存在
 func Exist(key string) (bool, error) {
 	if utils.IsEmpty(key) {
@@ -184,6 +325,131 @@ func HDel(key string, hashField interface{}) error {
 
 	_, err := conn.Do("HDEL", key, hashField)
 	return err
+}
+
+// 设置key过期时间 expSecs(秒)
+func SetKeyExpSecs(key string, expSecs int) error {
+	if utils.IsEmpty(key) || expSecs < 1 {
+		return errors.New("invalid arguments")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	_, err := conn.Do("EXPIRE", key, expSecs)
+
+	return err
+}
+
+// 设置key过期时间 expMillSecs(毫秒)
+func SetKeyExpMillSecs(key string, expMillSecs int) error {
+	if utils.IsEmpty(key) || expMillSecs < 1 {
+		return errors.New("invalid arguments")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	_, err := conn.Do("PEXPIRE", key, expMillSecs)
+
+	return err
+}
+
+// 设置key过期时间 按给定expTime以秒为单位的时间戳
+func SetKeyExpUnixSecs(key string, expTime time.Time) error {
+	if utils.IsEmpty(key) || expTime.IsZero() {
+		return errors.New("invalid arguments")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	_, err := conn.Do("EXPIREAT", key, expTime.Unix())
+
+	return err
+}
+
+// 设置key过期时间 按给定expTime以毫秒为单位的时间戳
+func SetKeyExpUnixMillSecs(key string, expTime time.Time) error {
+	if utils.IsEmpty(key) || expTime.IsZero() {
+		return errors.New("invalid arguments")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	_, err := conn.Do("PEXPIREAT", key, expTime.UnixMilli())
+
+	return err
+}
+
+// 持久化key 将key的过期时间移除
+func RemoveKeyExp(key string) error {
+	if utils.IsEmpty(key) {
+		return errors.New("invalid arguments")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	_, err := conn.Do("PERSIST", key)
+
+	return err
+}
+
+// 获取key剩余存活秒数 当 key不存在时，返回 -2 。 当key存在但没有设置剩余生存时间时，返回 -1
+func GetKeyTimeToLiveSecs(key string, secPtr *int64) error {
+	if utils.IsEmpty(key) {
+		return errors.New("invalid arguments")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	reply, err := conn.Do("TTL", key)
+	if err != nil {
+		return err
+	}
+
+	return parse(reply, secPtr)
+}
+
+// 获取key剩余存活毫秒数
+func GetKeyTimeToLiveMillSecs(key string, millSecPtr *int64) error {
+	if utils.IsEmpty(key) {
+		return errors.New("invalid arguments")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	reply, err := conn.Do("PTTL", key)
+	if err != nil {
+		return err
+	}
+
+	return parse(reply, millSecPtr)
 }
 
 func parse(reply interface{}, valPtr interface{}) (err error) {
