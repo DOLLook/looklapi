@@ -147,6 +147,24 @@ func (extension *CustomTimeExtension) UpdateStructDescriptor(structDescriptor *j
 			} else {
 				stream.Write([]byte("null"))
 			}
+		}, isEmptyFunc: func(ptr unsafe.Pointer) bool {
+			if typeErr != nil {
+				return false
+			}
+
+			var tp *time.Time
+			if isPtr {
+				tpp := (**time.Time)(ptr)
+				tp = *(tpp)
+			} else {
+				tp = (*time.Time)(ptr)
+			}
+
+			if tp != nil && !tp.IsZero() {
+				return false
+			} else {
+				return true
+			}
 		}}
 		binding.Decoder = &funcDecoder{fun: func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 			if typeErr != nil {
