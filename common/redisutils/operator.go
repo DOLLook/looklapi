@@ -317,14 +317,35 @@ func HDel(key string, hashField interface{}) error {
 		return nil
 	}
 
+	keys := make([]interface{}, 0)
+	fileds := reflect.ValueOf(hashField)
+	if fileds.Kind() == reflect.Slice {
+		for i := 0; i < fileds.Len(); i++ {
+			keys = append(keys, fileds.Index(i).Interface())
+		}
+		if len(keys) < 1 {
+			return nil
+		}
+	}
+
 	conn := getConn(key)
 	if conn.Err() != nil {
 		return conn.Err()
 	}
 	defer conn.Close()
 
-	_, err := conn.Do("HDEL", key, hashField)
-	return err
+	if len(keys) > 1 {
+		for _, field := range keys {
+			conn.Send("HDEL", key, field)
+		}
+
+		_, err := conn.Do("")
+		return err
+
+	} else {
+		_, err := conn.Do("HDEL", key, hashField)
+		return err
+	}
 }
 
 // 设置key过期时间 expSecs(秒)

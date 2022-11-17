@@ -327,6 +327,7 @@ func reqApiParams(ctx iris.Context, ctrMetadata *controllerMetadata) ([]reflect.
 			//}
 
 			storeWrapper := &memStoreWrapper{ctx.Values()}
+			storeWrapper.SetImmutable(utils.HttpRemoteAddr, ctx.Request().RemoteAddr)
 			myCtx = context.WithValue(myCtx, utils.HttpContextStore, storeWrapper)
 
 			ctrParams = append(ctrParams, reflect.ValueOf(myCtx))

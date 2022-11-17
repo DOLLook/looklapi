@@ -2,6 +2,7 @@ package irisserver_middleware
 
 import (
 	"github.com/kataras/iris/v12"
+	"looklapi/common/utils"
 )
 
 // 写入controller响应
@@ -21,7 +22,7 @@ func ControllerRespWriter() iris.Handler {
 		}
 		if ctxStore != nil {
 			// 执行清空上下文临时数据
-			//ctxStore.Remove("tempDataKey")
+			ctxStore.Remove(utils.HttpRemoteAddr)
 		}
 
 		context.Next()

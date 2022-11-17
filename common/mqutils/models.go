@@ -106,7 +106,7 @@ func (ch *mqChannel) updateLastUseMills() {
 // 消息体
 type mqMessage struct {
 	Guid         string    // 消息id
-	Timespan     time.Time `time_format:"SimpleDatetime"` // 消息生成时间
+	Timespan     time.Time `time_format:"2006-01-02 15:04:05.000"` // 消息生成时间
 	CurrentRetry int32     // 当前重试次数
 	JsonContent  string    // 消息内容
 }

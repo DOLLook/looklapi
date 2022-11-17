@@ -175,9 +175,11 @@ func (extension *CustomTimeExtension) UpdateStructDescriptor(structDescriptor *j
 			str := iter.ReadString()
 			var t *time.Time
 			if str != "" {
-				str = dateTimeSimplify(str)
+				str = dateTimeSimplify(str, timeFormat)
 				var err error
-				tmp, err := time.ParseInLocation(timeFormat, str, locale)
+				// 始终用2006-01-02 15:04:05 decode 以保持时间精度。timeFormat仅作为序列化使用
+				//tmp, err := time.ParseInLocation(timeFormat, str, locale)
+				tmp, err := time.ParseInLocation("2006-01-02 15:04:05", str, locale)
 				if err != nil {
 					iter.Error = err
 					return
@@ -224,12 +226,31 @@ func (encoder *funcEncoder) IsEmpty(ptr unsafe.Pointer) bool {
 	return encoder.isEmptyFunc(ptr)
 }
 
-// 时间简化
-func dateTimeSimplify(datetime string) string {
+// 时间简化格式 simpleFormat(简化的时间格式如2006-01-02 15:04:05   2006-01-02 15:04:05.000不带任何符号)
+func dateTimeSimplify(datetime string, simpleFormat string) string {
 	datetime = strings.TrimSuffix(datetime, "Z")
 	datetime = strings.ReplaceAll(datetime, "T", " ")
 	datetime = strings.Split(datetime, "+")[0]
 	datetime = strings.Split(datetime, "Z")[0]
 	datetime = strings.TrimSpace(datetime)
+
+	// 始终用2006-01-02 15:04:05 decode 以保持时间精度
+	//formatSplit := strings.Split(simpleFormat, ".")
+	//if len(formatSplit) == 2 {
+	//	formatZeroLen := len(formatSplit[1])
+	//	datetimeSplit := strings.Split(datetime, ".")
+	//	if len(datetimeSplit) == 2 {
+	//		datetimeZeroLen := len(datetimeSplit[1])
+	//		subLen := formatZeroLen - datetimeZeroLen
+	//		if subLen > 0 {
+	//			datetime = datetime + strings.Repeat("0", subLen)
+	//		} else {
+	//			datetime = datetime[:len(datetime)+subLen]
+	//		}
+	//	} else {
+	//		datetime = datetime + "." + strings.Repeat("0", formatZeroLen)
+	//	}
+	//}
+
 	return datetime
 }
