@@ -172,6 +172,34 @@ func HashGetValues(key string, hashFields interface{}, slicePtr interface{}) err
 	}
 }
 
+//执行0个参数的脚本
+func DoLuaWith0Arg(dbIndex int, script string, resultPtr interface{}) error {
+	if dbIndex < 0 || dbIndex > 15 {
+		return errors.New("dbIndex must in [0,15]")
+	}
+
+	if resultPtr != nil {
+		resultValRef := reflect.ValueOf(resultPtr)
+		if resultValRef.Kind() != reflect.Ptr {
+			return errors.New("resultPtr must be a pointer")
+		}
+	}
+
+	conn := getConn0(uint8(dbIndex))
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+	reply, err := redis.NewScript(0, script).Do(conn)
+	if err != nil {
+		return err
+	} else if resultPtr == nil {
+		return nil
+	}
+
+	return parse(reply, resultPtr)
+}
+
 func HashKeys(key string, valPtr interface{}) error {
 	if utils.IsEmpty(key) {
 		return errors.New("invalid key")
@@ -193,6 +221,49 @@ func HashKeys(key string, valPtr interface{}) error {
 	}
 
 	return parse(reply, valPtr)
+}
+
+// batch send redis commands
+func MultiExec(dbIndex int, commands [][]interface{}) error {
+	if dbIndex < 0 || dbIndex > 15 {
+		return errors.New("dbIndex must in [0,15]")
+	}
+
+	if len(commands) < 1 {
+		return nil
+	}
+
+	conn := getConn0(uint8(dbIndex))
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+	if err := conn.Send("MULTI"); err != nil {
+		return err
+	}
+
+	for i, cmd := range commands {
+		if len(cmd) < 2 {
+			return errors.New(fmt.Sprintf("invalid command at position %d", i))
+		}
+
+		key := cmd[0]
+		cmdName, ok := key.(string)
+		if !ok {
+			return errors.New(fmt.Sprintf("command name not string at position %d", i))
+		}
+
+		args := cmd[1:]
+
+		if err := conn.Send(cmdName, args...); err != nil {
+			return err
+		}
+	}
+
+	if _, err := conn.Do("EXEC"); err != nil {
+		return err
+	}
+	return nil
 }
 
 func HashValues(key string, slicePtr interface{}) error {
