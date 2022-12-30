@@ -69,5 +69,12 @@ func doRequest(reqMethod string, url string, header *http.Header, body interface
 		return nil, err
 	}
 
-	return resp.Body(), nil
+	respBytes := resp.Body()
+
+	copyRespBytes := make([]byte, len(respBytes))
+	if len(respBytes) > 0 {
+		copy(copyRespBytes, respBytes)
+	}
+
+	return copyRespBytes, nil
 }
