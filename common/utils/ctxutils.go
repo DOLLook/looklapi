@@ -13,7 +13,7 @@ type CtxStore interface {
 	Remove(key string) bool
 }
 
-// 通过http context获取请求头
+// 通过http context获取请求头对象
 func GetHttpHeader(httpCtx context.Context) http.Header {
 	if httpCtx == nil {
 		return nil
@@ -29,6 +29,16 @@ func GetHttpHeader(httpCtx context.Context) http.Header {
 	}
 
 	return httpHeader
+}
+
+// 通过http context获取请求头
+func GetHttpHeaderVal(httpCtx context.Context, header string) string {
+	headerMap := GetHttpHeader(httpCtx)
+	if headerMap == nil {
+		return ""
+	}
+
+	return headerMap.Get(header)
 }
 
 // 通过http context获取上下文临时存储

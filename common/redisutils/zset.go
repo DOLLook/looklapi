@@ -48,10 +48,25 @@ func ZScore(key string, member string, valPtr interface{}) error {
 	return parse(reply, valPtr)
 }
 
-// 删除成员
-func ZRemove(key string, member string) error {
-	if utils.IsEmpty(key) || utils.IsEmpty(member) {
-		return errors.New("invalid arguments")
+// 移除有序集 key 中的一个或多个成员，不存在的成员将被忽略
+// 返回 被成功移除的成员的数量，不包括被忽略的成员
+func ZRemove(key string, removeCount *int, members ...string) error {
+	if utils.IsEmpty(key) {
+		return errors.New("invalid key")
+	}
+
+	if removeCount != nil && *removeCount >= 0 {
+		return errors.New("the removeCount must init to less than 0")
+	}
+
+	if len(members) < 1 {
+		return nil
+	}
+
+	args := make([]interface{}, 0)
+	args = append(args, key)
+	for _, item := range members {
+		args = append(args, item)
 	}
 
 	conn := getConn(key)
@@ -60,19 +75,30 @@ func ZRemove(key string, member string) error {
 	}
 	defer conn.Close()
 
-	_, err := conn.Do("ZREM", key, member)
+	reply, err := conn.Do("ZREM", args...)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if removeCount == nil {
+		return nil
+	}
+
+	return parse(reply, removeCount)
 }
 
 // 查询[minScore,maxScore]区间的成员数量
-func ZCount(key string, minScore int64, maxScore int64, valPtr interface{}) error {
+func ZCount(key string, minScore int64, maxScore int64, count *int) error {
 	if utils.IsEmpty(key) || minScore > maxScore {
 		return errors.New("invalid arguments")
 	}
 
-	if valPtr == nil {
-		return errors.New("valPtr must not be nil")
+	if count == nil {
+		return errors.New("need a none nil *int to receive the count")
+	}
+
+	if *count >= 0 {
+		return errors.New("the count must init to less than 0")
 	}
 
 	conn := getConn(key)
@@ -86,17 +112,21 @@ func ZCount(key string, minScore int64, maxScore int64, valPtr interface{}) erro
 		return err
 	}
 
-	return parse(reply, valPtr)
+	return parse(reply, count)
 }
 
 // 查询成员以score在zset中从小到大的排序号 当member不在zset中时返回err.Nil
-func ZRank(key string, member string, valPtr interface{}) error {
+func ZRank(key string, member string, rank *int) error {
 	if utils.IsEmpty(key) || utils.IsEmpty(member) {
 		return errors.New("invalid arguments")
 	}
 
-	if valPtr == nil {
-		return errors.New("valPtr must not be nil")
+	if rank == nil {
+		return errors.New("rank must not be nil")
+	}
+
+	if *rank >= 0 {
+		return errors.New("the rank must init to less than 0")
 	}
 
 	conn := getConn(key)
@@ -110,17 +140,21 @@ func ZRank(key string, member string, valPtr interface{}) error {
 		return err
 	}
 
-	return parse(reply, valPtr)
+	return parse(reply, rank)
 }
 
 // 查询成员以score在zset中从大到小的排序号 当member不在zset中时返回err.Nil
-func ZRevRank(key string, member string, valPtr interface{}) error {
+func ZRevRank(key string, member string, rank *int) error {
 	if utils.IsEmpty(key) || utils.IsEmpty(member) {
 		return errors.New("invalid arguments")
 	}
 
-	if valPtr == nil {
-		return errors.New("valPtr must not be nil")
+	if rank == nil {
+		return errors.New("rank must not be nil")
+	}
+
+	if *rank >= 0 {
+		return errors.New("the rank must init to less than 0")
 	}
 
 	conn := getConn(key)
@@ -134,13 +168,17 @@ func ZRevRank(key string, member string, valPtr interface{}) error {
 		return err
 	}
 
-	return parse(reply, valPtr)
+	return parse(reply, rank)
 }
 
 // 移除[minScore,maxScore]区间的成员
-func ZRemByScore(key string, minScore int64, maxScore int64) error {
+func ZRemByScore(key string, minScore int64, maxScore int64, removeCount *int) error {
 	if utils.IsEmpty(key) || minScore > maxScore {
 		return errors.New("invalid arguments")
+	}
+
+	if removeCount != nil && *removeCount >= 0 {
+		return errors.New("the removeCount must init to less than 0")
 	}
 
 	conn := getConn(key)
@@ -149,17 +187,28 @@ func ZRemByScore(key string, minScore int64, maxScore int64) error {
 	}
 	defer conn.Close()
 
-	_, err := conn.Do("ZREMRANGEBYSCORE", key, minScore, maxScore)
+	reply, err := conn.Do("ZREMRANGEBYSCORE", key, minScore, maxScore)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if removeCount == nil {
+		return nil
+	}
+
+	return parse(reply, removeCount)
 }
 
 // 移除[start,stop]位置区间的成员
 // start stop 为成员以score在zset中从小到大的位置索引
 // 序号可以为负数，如-1表示最后一个成员，-2表示倒数第二个成员
-func ZRemByRank(key string, start int, stop int) error {
+func ZRemByRank(key string, start int, stop int, removeCount *int) error {
 	if utils.IsEmpty(key) {
 		return errors.New("invalid arguments")
+	}
+
+	if removeCount != nil && *removeCount >= 0 {
+		return errors.New("the removeCount must init to less than 0")
 	}
 
 	conn := getConn(key)
@@ -168,9 +217,16 @@ func ZRemByRank(key string, start int, stop int) error {
 	}
 	defer conn.Close()
 
-	_, err := conn.Do("ZREMRANGEBYRANK", key, start, stop)
+	reply, err := conn.Do("ZREMRANGEBYRANK", key, start, stop)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if removeCount == nil {
+		return nil
+	}
+
+	return parse(reply, removeCount)
 }
 
 // 获取[start,stop]位置区间的成员数据
@@ -191,13 +247,24 @@ func ZRange(key string, start int, stop int, sliceOrMapPtr interface{}, withScor
 		return errors.New("sliceOrMapPtr must be a sliceOrMap pointer")
 	}
 
+	mapValKind := reflect.Invalid
 	if withScores {
 		if sliceOrMapVal.Elem().Kind() != reflect.Map {
 			return errors.New("sliceOrMapPtr must be a map pointer")
 		}
+		if sliceOrMapVal.Elem().Type().Key().Kind() != reflect.String {
+			return errors.New("map key must be string")
+		}
+		mapValKind = sliceOrMapVal.Elem().Type().Elem().Kind()
+		if mapValKind != reflect.Int64 && mapValKind != reflect.Float64 {
+			return errors.New("map value must be int64 or float64")
+		}
 	} else {
 		if sliceOrMapVal.Elem().Kind() != reflect.Slice {
 			return errors.New("sliceOrMapPtr must be a slice pointer")
+		}
+		if sliceOrMapVal.Elem().Type().Elem().Kind() != reflect.String {
+			return errors.New("slice type must be []string")
 		}
 	}
 
@@ -231,10 +298,20 @@ func ZRange(key string, start int, stop int, sliceOrMapPtr interface{}, withScor
 
 	for i := 0; i < len(tempSlice); i++ {
 		if i%2 == 0 {
-			if val, err := strconv.Atoi(tempSlice[i+1]); err != nil {
-				return err
+			if mapValKind == reflect.Int64 {
+				// int64
+				if val, err := strconv.ParseInt(tempSlice[i+1], 10, 64); err != nil {
+					return err
+				} else {
+					sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				}
 			} else {
-				sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				// float64
+				if val, err := strconv.ParseFloat(tempSlice[i+1], 64); err != nil {
+					return err
+				} else {
+					sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				}
 			}
 		}
 	}
@@ -260,13 +337,24 @@ func ZRevRange(key string, start int, stop int, sliceOrMapPtr interface{}, withS
 		return errors.New("sliceOrMapPtr must be a sliceOrMap pointer")
 	}
 
+	mapValKind := reflect.Invalid
 	if withScores {
 		if sliceOrMapVal.Elem().Kind() != reflect.Map {
 			return errors.New("sliceOrMapPtr must be a map pointer")
 		}
+		if sliceOrMapVal.Elem().Type().Key().Kind() != reflect.String {
+			return errors.New("map key must be string")
+		}
+		mapValKind = sliceOrMapVal.Elem().Type().Elem().Kind()
+		if mapValKind != reflect.Int64 && mapValKind != reflect.Float64 {
+			return errors.New("map value must be int64 or float64")
+		}
 	} else {
 		if sliceOrMapVal.Elem().Kind() != reflect.Slice {
 			return errors.New("sliceOrMapPtr must be a slice pointer")
+		}
+		if sliceOrMapVal.Elem().Type().Elem().Kind() != reflect.String {
+			return errors.New("slice type must be []string")
 		}
 	}
 
@@ -300,10 +388,20 @@ func ZRevRange(key string, start int, stop int, sliceOrMapPtr interface{}, withS
 
 	for i := 0; i < len(tempSlice); i++ {
 		if i%2 == 0 {
-			if val, err := strconv.Atoi(tempSlice[i+1]); err != nil {
-				return err
+			if mapValKind == reflect.Int64 {
+				// int64
+				if val, err := strconv.ParseInt(tempSlice[i+1], 10, 64); err != nil {
+					return err
+				} else {
+					sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				}
 			} else {
-				sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				// float64
+				if val, err := strconv.ParseFloat(tempSlice[i+1], 64); err != nil {
+					return err
+				} else {
+					sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				}
 			}
 		}
 	}
@@ -327,13 +425,24 @@ func ZRangeByScore(key string, minScore int64, maxScore int64, sliceOrMapPtr int
 		return errors.New("sliceOrMapPtr must be a sliceOrMap pointer")
 	}
 
+	mapValKind := reflect.Invalid
 	if withScores {
 		if sliceOrMapVal.Elem().Kind() != reflect.Map {
 			return errors.New("sliceOrMapPtr must be a map pointer")
 		}
+		if sliceOrMapVal.Elem().Type().Key().Kind() != reflect.String {
+			return errors.New("map key must be string")
+		}
+		mapValKind = sliceOrMapVal.Elem().Type().Elem().Kind()
+		if mapValKind != reflect.Int64 && mapValKind != reflect.Float64 {
+			return errors.New("map value must be int64 or float64")
+		}
 	} else {
 		if sliceOrMapVal.Elem().Kind() != reflect.Slice {
 			return errors.New("sliceOrMapPtr must be a slice pointer")
+		}
+		if sliceOrMapVal.Elem().Type().Elem().Kind() != reflect.String {
+			return errors.New("slice type must be []string")
 		}
 	}
 
@@ -367,10 +476,20 @@ func ZRangeByScore(key string, minScore int64, maxScore int64, sliceOrMapPtr int
 
 	for i := 0; i < len(tempSlice); i++ {
 		if i%2 == 0 {
-			if val, err := strconv.Atoi(tempSlice[i+1]); err != nil {
-				return err
+			if mapValKind == reflect.Int64 {
+				// int64
+				if val, err := strconv.ParseInt(tempSlice[i+1], 10, 64); err != nil {
+					return err
+				} else {
+					sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				}
 			} else {
-				sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				// float64
+				if val, err := strconv.ParseFloat(tempSlice[i+1], 64); err != nil {
+					return err
+				} else {
+					sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				}
 			}
 		}
 	}
@@ -394,13 +513,24 @@ func ZRevRangeByScore(key string, maxScore int64, minScore int64, sliceOrMapPtr 
 		return errors.New("sliceOrMapPtr must be a sliceOrMap pointer")
 	}
 
+	mapValKind := reflect.Invalid
 	if withScores {
 		if sliceOrMapVal.Elem().Kind() != reflect.Map {
 			return errors.New("sliceOrMapPtr must be a map pointer")
 		}
+		if sliceOrMapVal.Elem().Type().Key().Kind() != reflect.String {
+			return errors.New("map key must be string")
+		}
+		mapValKind = sliceOrMapVal.Elem().Type().Elem().Kind()
+		if mapValKind != reflect.Int64 && mapValKind != reflect.Float64 {
+			return errors.New("map value must be int64 or float64")
+		}
 	} else {
 		if sliceOrMapVal.Elem().Kind() != reflect.Slice {
 			return errors.New("sliceOrMapPtr must be a slice pointer")
+		}
+		if sliceOrMapVal.Elem().Type().Elem().Kind() != reflect.String {
+			return errors.New("slice type must be []string")
 		}
 	}
 
@@ -434,10 +564,20 @@ func ZRevRangeByScore(key string, maxScore int64, minScore int64, sliceOrMapPtr 
 
 	for i := 0; i < len(tempSlice); i++ {
 		if i%2 == 0 {
-			if val, err := strconv.Atoi(tempSlice[i+1]); err != nil {
-				return err
+			if mapValKind == reflect.Int64 {
+				// int64
+				if val, err := strconv.ParseInt(tempSlice[i+1], 10, 64); err != nil {
+					return err
+				} else {
+					sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				}
 			} else {
-				sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				// float64
+				if val, err := strconv.ParseFloat(tempSlice[i+1], 64); err != nil {
+					return err
+				} else {
+					sliceOrMapVal.Elem().SetMapIndex(reflect.ValueOf(tempSlice[i]), reflect.ValueOf(val))
+				}
 			}
 		}
 	}
