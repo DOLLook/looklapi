@@ -6,6 +6,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"looklapi/common/utils"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -83,6 +84,45 @@ func HashSet(key string, hashField interface{}, val interface{}) error {
 	defer conn.Close()
 
 	_, err := conn.Do("HSET", key, hashField, val)
+	return err
+}
+
+func HashMultiSet(key string, kv interface{}) error {
+	if utils.IsEmpty(key) || kv == nil {
+		return errors.New("invalid arguments")
+	}
+
+	mapVal := reflect.ValueOf(kv)
+	if mapVal.Kind() == reflect.Ptr {
+		mapVal = mapVal.Elem()
+	}
+
+	if mapVal.Kind() != reflect.Map {
+		return errors.New("kv must a map")
+	}
+
+	mapLen := mapVal.Len()
+	if mapLen < 1 {
+		return errors.New("kv must not an empty map")
+	}
+
+	array := make([]interface{}, 2*mapLen+1)
+	array[0] = key
+	i := 1
+	for _, item := range mapVal.MapKeys() {
+		array[i] = item.Interface()
+		i++
+		array[i] = mapVal.MapIndex(item).Interface()
+		i++
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	_, err := conn.Do("HMSET", array...)
 	return err
 }
 
@@ -172,7 +212,7 @@ func HashGetValues(key string, hashFields interface{}, slicePtr interface{}) err
 	}
 }
 
-//执行0个参数的脚本
+// 执行0个参数的脚本
 func DoLuaWith0Arg(dbIndex int, script string, resultPtr interface{}) error {
 	if dbIndex < 0 || dbIndex > 15 {
 		return errors.New("dbIndex must in [0,15]")
@@ -223,17 +263,13 @@ func HashKeys(key string, valPtr interface{}) error {
 	return parse(reply, valPtr)
 }
 
-// batch send redis commands
-func MultiExec(dbIndex int, commands [][]interface{}) error {
-	if dbIndex < 0 || dbIndex > 15 {
-		return errors.New("dbIndex must in [0,15]")
-	}
-
+// 事务提交redis命令
+func MultiExec(key string, commands [][]interface{}) error {
 	if len(commands) < 1 {
 		return nil
 	}
 
-	conn := getConn0(uint8(dbIndex))
+	conn := getConn(key)
 	if conn.Err() != nil {
 		return conn.Err()
 	}
@@ -316,6 +352,111 @@ func HashValues(key string, slicePtr interface{}) error {
 	} else {
 		return parse(reply, slicePtr)
 	}
+}
+
+// 获取所有key val
+func HashGetAll(key string, mapPtr interface{}) error {
+	if utils.IsEmpty(key) {
+		return errors.New("invalid key")
+	}
+
+	if mapPtr == nil {
+		return errors.New("mapPtr must not be nil")
+	}
+
+	mapValRef := reflect.ValueOf(mapPtr)
+	if mapValRef.Kind() != reflect.Ptr || mapValRef.Elem().Kind() != reflect.Map {
+		return errors.New("mapPtr must be a map pointer")
+	}
+
+	mapKeyKind := mapValRef.Elem().Type().Key().Kind()
+	if mapKeyKind != reflect.String && mapKeyKind != reflect.Int && mapKeyKind != reflect.Int64 {
+		return errors.New("map key must be string or int or int64")
+	}
+
+	mapValKind := mapValRef.Elem().Type().Elem().Kind()
+	if mapValKind == reflect.Ptr {
+		if mapValRef.Elem().Type().Elem().Elem().Kind() != reflect.Struct {
+			return errors.New("map value must be string or int or int64 or float64 or struct or structPtr")
+		}
+	} else if mapValKind != reflect.String && mapValKind != reflect.Int && mapValKind != reflect.Int64 && mapValKind != reflect.Float64 && mapValKind != reflect.Struct {
+		return errors.New("map value must be string or int or int64 or float64 or struct or structPtr")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	reply, err := conn.Do("HGETALL", key)
+	if err != nil {
+		return err
+	}
+
+	tempSlice := make([]string, 0)
+	err = parse(reply, &tempSlice)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(tempSlice); i++ {
+		if i%2 == 0 {
+			var mapKey, mapVal reflect.Value
+			metaKey, metaVal := tempSlice[i], tempSlice[i+1]
+
+			if mapKeyKind == reflect.String {
+				mapKey = reflect.ValueOf(metaKey)
+			} else {
+				if key, err := strconv.ParseInt(metaKey, 10, 64); err != nil {
+					return err
+				} else if mapKeyKind == reflect.Int {
+					mapKey = reflect.ValueOf(int(key))
+				} else {
+					mapKey = reflect.ValueOf(key)
+				}
+			}
+
+			if mapValKind == reflect.String {
+				mapVal = reflect.ValueOf(metaVal)
+			} else if mapValKind == reflect.Int || mapValKind == reflect.Int64 {
+				if val, err := strconv.ParseInt(metaVal, 10, 64); err != nil {
+					return err
+				} else if mapValKind == reflect.Int {
+					mapVal = reflect.ValueOf(int(val))
+				} else {
+					mapVal = reflect.ValueOf(val)
+				}
+			} else if mapValKind == reflect.Float64 {
+				if val, err := strconv.ParseFloat(metaVal, 64); err != nil {
+					return err
+				} else {
+					mapVal = reflect.ValueOf(val)
+				}
+			} else {
+				// mapValKind == reflect.Ptr || mapValKind == reflect.Struct
+				tp := mapValRef.Elem().Type().Elem()
+				if mapValKind == reflect.Ptr {
+					tp = tp.Elem()
+				}
+
+				ptr := reflect.New(tp)
+				if err := utils.JsonToStruct(metaVal, ptr.Interface()); err != nil {
+					return err
+				}
+
+				if mapKeyKind == reflect.Ptr {
+					mapVal = ptr
+				} else {
+					mapVal = ptr.Elem()
+				}
+			}
+
+			mapValRef.Elem().SetMapIndex(mapKey, mapVal)
+		}
+	}
+
+	return nil
 }
 
 // 判断key是否存在
@@ -417,6 +558,33 @@ func HDel(key string, hashField interface{}) error {
 		_, err := conn.Do("HDEL", key, hashField)
 		return err
 	}
+}
+
+// 增减hash值
+func HashIncr(key string, hashField interface{}, incrVal int, afterIncr *int) error {
+	if utils.IsEmpty(key) || hashField == nil {
+		return errors.New("invalid key or hashField")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	reply, err := conn.Do("HINCRBY", key, hashField, incrVal)
+	if err != nil {
+		return err
+	}
+
+	if afterIncr == nil {
+		return nil
+	}
+
+	if err := parse(reply, afterIncr); err != nil {
+		return err
+	}
+	return nil
 }
 
 // 设置key过期时间 expSecs(秒)

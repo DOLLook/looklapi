@@ -5,7 +5,7 @@ import (
 )
 
 // 检查字符串str是否包含checkStr
-func StrContians(str string, checkStr string) bool {
+func StrContains(str string, checkStr string) bool {
 	if IsEmpty(checkStr) {
 		return true
 	}
@@ -24,6 +24,21 @@ func StrContians(str string, checkStr string) bool {
 	for i := 0; i < lenStr; i++ {
 		tempStr := string(strRunes[i : i+lenCheckStr])
 		if tempStr == checkStr {
+			return true
+		}
+	}
+
+	return false
+}
+
+// 判断切片是否包含元素
+func SliceContains[T comparable](sl []T, ele T) bool {
+	if len(sl) < 1 {
+		return false
+	}
+
+	for _, item := range sl {
+		if item == ele {
 			return true
 		}
 	}
@@ -104,12 +119,10 @@ func ArrayOrSliceContains(arrayOrSlice interface{}, ele interface{}) bool {
 	return false
 }
 
-/**
-删除切片元素
-slicePtr 切片指针
-firstCount 删除前几个, 0全部删除
-返回 是否有值被移除
-*/
+// 删除切片元素
+// slicePtr 切片指针
+// firstCount 删除前几个, 0全部删除
+// 返回 是否有值被移除
 func SliceRemove(slicePtr interface{}, ele interface{}, firstCount int) bool {
 	if slicePtr == nil {
 		return false
@@ -201,12 +214,10 @@ func SliceRemove(slicePtr interface{}, ele interface{}, firstCount int) bool {
 	return true
 }
 
-/**
-删除切片元素
-slicePtr 切片指针
-index 待删除的索引
-返回 是否有值被移除
-*/
+// 删除切片元素
+// slicePtr 切片指针
+// index 待删除的索引
+// 返回 是否有值被移除
 func SliceRemoveByIndex(slicePtr interface{}, index ...int) bool {
 	if slicePtr == nil || len(index) == 0 {
 		return false
@@ -276,9 +287,7 @@ func SliceRemoveByIndex(slicePtr interface{}, index ...int) bool {
 	return true
 }
 
-/**
-集合是否为空
-*/
+// 集合是否为空
 func CollectionIsEmpty(collection interface{}) bool {
 	if collection == nil {
 		return true

@@ -2,6 +2,8 @@ package utils
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
@@ -106,8 +108,15 @@ func RSASign(plain []byte, base64PrivateKey string) ([]byte, error) {
 		return nil, err
 	}
 
-	hash := crypto.Hash.New(crypto.SHA1)
+	// same with below
+	hash := sha1.New()
 	hash.Write(plain)
+
+	//hash := crypto.Hash.New(crypto.SHA1)
+	//hash.Write(plain)
+
+	// same with below
+	//rsa.SignPKCS1v15(rand.Reader, rsaPrivateKey, crypto.SHA1, hash.Sum(nil))
 
 	if sign, err := rsaPrivateKey.Sign(rand.Reader, hash.Sum(nil), crypto.SHA1); err != nil {
 		return nil, err
@@ -146,4 +155,34 @@ func RSACheckSign(originalBytes, signBytes []byte, base64PubKey string) error {
 	hash.Write(originalBytes)
 
 	return rsa.VerifyPKCS1v15(publicKey, crypto.SHA1, hash.Sum(nil), signBytes)
+}
+
+// 转换pkcs8私钥
+func ConvertPKCS8PrivateKey(base64PKCS8PrivateKey string) (base64PKCS1PrivateKey, base64ECDSAPrivateKey, base64Ed25519PrivateKey string, err error) {
+	base64PKCS1PrivateKey, base64ECDSAPrivateKey, base64Ed25519PrivateKey, err = "", "", "", nil
+
+	if IsEmpty(base64PKCS8PrivateKey) {
+		err = errors.New("invalid base64PKCS8PrivateKey")
+		return
+	}
+
+	if keyBytes, err1 := base64.StdEncoding.DecodeString(base64PKCS8PrivateKey); err1 != nil {
+		err = err1
+	} else if pkcs8, err1 := x509.ParsePKCS8PrivateKey(keyBytes); err1 != nil {
+		err = err1
+	} else if pkcs1, ok := pkcs8.(*rsa.PrivateKey); ok {
+		base64PKCS1PrivateKey = base64.StdEncoding.EncodeToString(x509.MarshalPKCS1PrivateKey(pkcs1))
+	} else if ecdsaPk, ok := pkcs8.(*ecdsa.PrivateKey); ok {
+		if ecdsaBytes, err1 := x509.MarshalECPrivateKey(ecdsaPk); err1 != nil {
+			err = err1
+		} else {
+			base64ECDSAPrivateKey = base64.StdEncoding.EncodeToString(ecdsaBytes)
+		}
+	} else if pk, ok := pkcs8.(ed25519.PrivateKey); ok {
+		base64Ed25519PrivateKey = base64.StdEncoding.EncodeToString(pk)
+	} else {
+		err = errors.New("param named base64PKCS8PrivateKey is not a valid base64 pkcs8 private key")
+	}
+
+	return
 }

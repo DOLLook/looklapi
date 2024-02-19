@@ -10,7 +10,7 @@ func ControllerRespWriter() iris.Handler {
 	return func(context iris.Context) {
 		ctxStore, key, resp := getControllerResp(context)
 		if resp != nil {
-			if _, err := context.JSON(resp); err != nil {
+			if err := context.JSON(resp); err != nil {
 				context.SetErr(err)
 			}
 			ctxStore.Remove(key)
