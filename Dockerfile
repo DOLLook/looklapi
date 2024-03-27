@@ -1,4 +1,4 @@
-FROM golang:1.17.8-alpine3.15
+FROM golang:1.21.6-alpine3.19
 
 WORKDIR /build
 
@@ -14,7 +14,7 @@ COPY . .
 #RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -a -o looklapi .
 RUN go build -a -o looklapi .
 
-FROM alpine:3.15
+FROM alpine:3.19.1
 
 #RUN apk --no-cache add tzdata ca-certificates libc6-compat libgcc libstdc++
 RUN apk add tzdata ca-certificates libc6-compat libgcc libstdc++
