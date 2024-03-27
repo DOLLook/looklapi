@@ -2,7 +2,10 @@ package utils
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
+	"reflect"
 )
 
 // 上下文存储接口
@@ -56,5 +59,25 @@ func GetHttpCtxStore(httpCtx context.Context) CtxStore {
 		return store
 	} else {
 		return nil
+	}
+}
+
+var NotFoundCtxValueErr = errors.New("not found context value")
+
+// 获取context value
+func GetCtxValue[T any](ctx context.Context, key any) (T, error) {
+	var result T
+	if key == nil {
+		return result, errors.New("key must not nil")
+	}
+
+	if ctxVal := ctx.Value(key); ctxVal != nil {
+		if v, ok := ctxVal.(T); ok {
+			return v, nil
+		} else {
+			return result, errors.New(fmt.Sprintf("context value with type %s not match the type %s", reflect.TypeOf(ctxVal).String(), reflect.TypeOf(result).String()))
+		}
+	} else {
+		return result, NotFoundCtxValueErr
 	}
 }

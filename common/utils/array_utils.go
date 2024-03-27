@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"golang.org/x/exp/maps"
 	"reflect"
+	"slices"
 )
 
 // 检查字符串str是否包含checkStr
-func StrContains(str string, checkStr string) bool {
+func RuneContains(str string, checkStr string) bool {
 	if IsEmpty(checkStr) {
 		return true
 	}
@@ -21,7 +23,7 @@ func StrContains(str string, checkStr string) bool {
 		return false
 	}
 
-	for i := 0; i < lenStr; i++ {
+	for i := 0; i <= lenStr-lenCheckStr; i++ {
 		tempStr := string(strRunes[i : i+lenCheckStr])
 		if tempStr == checkStr {
 			return true
@@ -119,7 +121,7 @@ func ArrayOrSliceContains(arrayOrSlice interface{}, ele interface{}) bool {
 	return false
 }
 
-// 删除切片元素
+// Deprecated: 删除切片元素
 // slicePtr 切片指针
 // firstCount 删除前几个, 0全部删除
 // 返回 是否有值被移除
@@ -203,8 +205,10 @@ func SliceRemove(slicePtr interface{}, ele interface{}, firstCount int) bool {
 		return false
 	}
 
-	for key, index := range removeMap {
-		sValueOf.Index(key).Set(sValueOf.Index(index))
+	changeKeys := maps.Keys(removeMap)
+	slices.Sort(changeKeys)
+	for _, key := range changeKeys {
+		sValueOf.Index(key).Set(sValueOf.Index(removeMap[key]))
 	}
 
 	newLen := arrLen - removeLen
@@ -214,7 +218,7 @@ func SliceRemove(slicePtr interface{}, ele interface{}, firstCount int) bool {
 	return true
 }
 
-// 删除切片元素
+// Deprecated: 删除切片元素
 // slicePtr 切片指针
 // index 待删除的索引
 // 返回 是否有值被移除
@@ -276,8 +280,10 @@ func SliceRemoveByIndex(slicePtr interface{}, index ...int) bool {
 		return false
 	}
 
-	for key, index := range removeMap {
-		sValueOf.Index(key).Set(sValueOf.Index(index))
+	changeKeys := maps.Keys(removeMap)
+	slices.Sort(changeKeys)
+	for _, key := range changeKeys {
+		sValueOf.Index(key).Set(sValueOf.Index(removeMap[key]))
 	}
 
 	newLen := arrLen - len(removeMapCheck)
