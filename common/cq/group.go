@@ -1,30 +1,30 @@
-package collection_utils
+package cq
 
 // 泛型Group
-type Group[E any] []*groupEntry[E]
+type Group[E any] []*GroupEntry[E]
 
-type groupEntry[E any] struct {
-	key    any
+type GroupEntry[E any] struct {
+	Key    any
 	Values GenericSlice[E]
 }
 
 // 泛型切片分组
-func (source GenericSlice[T]) GroupBy(f func(item T) any) Group[T] {
-	var temp []*groupEntry[T]
+func (source GenericSlice[T]) GroupBy(f func(e T) any) Group[T] {
+	var temp []*GroupEntry[T]
 
 	if len(source) <= 0 || f == nil {
 		return temp
 	}
 
-	m := make(map[any]*groupEntry[T])
+	m := make(map[any]*GroupEntry[T])
 
 	for _, item := range source {
 		k := f(item)
 		if e := m[k]; e != nil {
 			e.Values = append(e.Values, item)
 		} else {
-			m[k] = &groupEntry[T]{
-				key:    k,
+			m[k] = &GroupEntry[T]{
+				Key:    k,
 				Values: []T{item},
 			}
 		}
@@ -38,7 +38,7 @@ func (source GenericSlice[T]) GroupBy(f func(item T) any) Group[T] {
 }
 
 // 分组迭代
-func (source Group[T]) Foreach(f func(item *groupEntry[T])) {
+func (source Group[T]) Foreach(f func(g *GroupEntry[T])) {
 	if len(source) <= 0 || f == nil {
 		return
 	}

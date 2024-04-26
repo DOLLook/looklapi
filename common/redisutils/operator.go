@@ -546,7 +546,7 @@ func HDel(key string, hashField interface{}) error {
 	}
 	defer conn.Close()
 
-	if len(keys) > 1 {
+	if len(keys) > 0 {
 		for _, field := range keys {
 			conn.Send("HDEL", key, field)
 		}

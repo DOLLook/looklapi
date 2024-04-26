@@ -1,42 +1,9 @@
-package collection_utils
+package cq
 
 import (
-	"cmp"
 	"golang.org/x/exp/maps"
 	"slices"
 )
-
-// slice元素筛选器
-func SliceMapTo[S any, Out any](slice []S, f func(e S) (Out, bool)) GenericSlice[Out] {
-	var out []Out
-	if len(slice) < 1 || f == nil {
-		return out
-	}
-
-	for _, item := range slice {
-		if o, ok := f(item); ok {
-			out = append(out, o)
-		}
-	}
-
-	return out
-}
-
-// slice元素筛选器
-func SliceMapToOrdered[S any, Out cmp.Ordered](slice []S, f func(e S) (Out, bool)) OrderedSlice[Out] {
-	var out []Out
-	if len(slice) < 1 || f == nil {
-		return out
-	}
-
-	for _, item := range slice {
-		if o, ok := f(item); ok {
-			out = append(out, o)
-		}
-	}
-
-	return out
-}
 
 // slice转map
 func SliceToMap[S any, K comparable, V any](slice []S, kSelector func(e S) K, vSelector func(e S) V) GenericMap[K, V] {
@@ -51,6 +18,24 @@ func SliceToMap[S any, K comparable, V any](slice []S, kSelector func(e S) K, vS
 		v := vSelector(e)
 		m[k] = v
 	}
+
+	return m
+}
+
+// slice group后转map
+func SliceGroupToMap[S any, K comparable, V any](slice []S, kSelector func(e S) K, vSelector func(g *GroupEntry[S]) V) GenericMap[K, V] {
+	length := len(slice)
+	if length < 1 || kSelector == nil || vSelector == nil {
+		return nil
+	}
+
+	m := make(map[K]V, length)
+	FromSlice(slice).GroupBy(func(e S) any {
+		return kSelector(e)
+	}).Foreach(func(g *GroupEntry[S]) {
+		v := vSelector(g)
+		m[g.Key.(K)] = v
+	})
 
 	return m
 }
@@ -128,7 +113,7 @@ func SliceRemove[S ~[]E, E comparable](s S, e E, firstCount int) S {
 // 删除满足条件f的切片元素
 // firstCount 删除前几个, 0全部删除
 // 返回 删除后的新slice
-func SliceRemoveBy[S ~[]E, E any](s S, f func(item E) bool, firstCount int) S {
+func SliceRemoveBy[S ~[]E, E any](s S, f func(e E) bool, firstCount int) S {
 	if len(s) < 1 || f == nil {
 		return s
 	}

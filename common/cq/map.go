@@ -1,4 +1,4 @@
-package collection_utils
+package cq
 
 // 泛型map
 type GenericMap[K comparable, V any] map[K]V
@@ -165,4 +165,23 @@ func (source GenericMap[K, V]) Length() int {
 
 func (source GenericMap[K, V]) ToMap() map[K]V {
 	return source
+}
+
+// 检测map是否存在k/v满足测试条件predicate
+func (source GenericMap[K, V]) Any(predicate func(k K, v V) bool) bool {
+	if source == nil || len(source) < 1 {
+		return false
+	}
+
+	if predicate == nil {
+		return true
+	}
+
+	for k, v := range source {
+		if predicate(k, v) {
+			return true
+		}
+	}
+
+	return false
 }
