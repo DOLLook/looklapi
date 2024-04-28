@@ -229,8 +229,8 @@ func SliceRemoveByIndex[S ~[]E, E any](s S, index ...int) S {
 		s[key] = s[indexChangeMap[key]]
 	}
 
-	newLen := sLen - removeMapCheck.Count(nil, func(val bool) bool {
-		return val
+	newLen := sLen - removeMapCheck.Count(func(k int, v bool) bool {
+		return v
 	})
 	s = s[:newLen]
 

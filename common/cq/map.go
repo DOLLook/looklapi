@@ -1,5 +1,7 @@
 package cq
 
+import "golang.org/x/exp/maps"
+
 // 泛型map
 type GenericMap[K comparable, V any] map[K]V
 
@@ -8,7 +10,7 @@ func FromMap[K comparable, V any](m map[K]V) GenericMap[K, V] {
 }
 
 // 泛型map过滤器
-func (source GenericMap[K, V]) FilterMap(filterK func(key K) bool, filterV func(val V) bool) GenericMap[K, V] {
+func (source GenericMap[K, V]) FilterMap(predicate func(k K, v V) bool) GenericMap[K, V] {
 	m := make(map[K]V)
 
 	sLen := len(source)
@@ -16,7 +18,7 @@ func (source GenericMap[K, V]) FilterMap(filterK func(key K) bool, filterV func(
 		return m
 	}
 
-	if filterK == nil && filterV == nil {
+	if predicate == nil {
 		m := make(map[K]V, sLen)
 		for k, v := range source {
 			m[k] = v
@@ -25,23 +27,9 @@ func (source GenericMap[K, V]) FilterMap(filterK func(key K) bool, filterV func(
 		return m
 	}
 
-	if filterK == nil {
-		for k, v := range source {
-			if filterV(v) {
-				m[k] = v
-			}
-		}
-	} else if filterV == nil {
-		for k, v := range source {
-			if filterK(k) {
-				m[k] = v
-			}
-		}
-	} else {
-		for k, v := range source {
-			if filterK(k) && filterV(v) {
-				m[k] = v
-			}
+	for k, v := range source {
+		if predicate(k, v) {
+			m[k] = v
 		}
 	}
 
@@ -49,37 +37,20 @@ func (source GenericMap[K, V]) FilterMap(filterK func(key K) bool, filterV func(
 }
 
 // 泛型map key过滤器
-func (source GenericMap[K, V]) FilterKeys(filterK func(key K) bool, filterV func(val V) bool) GenericSlice[K] {
+func (source GenericMap[K, V]) FilterKeys(predicate func(k K, v V) bool) GenericSlice[K] {
 	var keys []K
 
 	if len(source) <= 0 {
 		return keys
 	}
 
-	if filterK == nil && filterV == nil {
-		keys = make([]K, len(source))
-		i := 0
-		for k, _ := range source {
-			keys[i] = k
-			i++
-		}
-	} else if filterK == nil {
-		for k, v := range source {
-			if filterV(v) {
-				keys = append(keys, k)
-			}
-		}
-	} else if filterV == nil {
-		for k, _ := range source {
-			if filterK(k) {
-				keys = append(keys, k)
-			}
-		}
-	} else {
-		for k, v := range source {
-			if filterK(k) && filterV(v) {
-				keys = append(keys, k)
-			}
+	if predicate == nil {
+		return maps.Keys(source)
+	}
+
+	for k, v := range source {
+		if predicate(k, v) {
+			keys = append(keys, k)
 		}
 	}
 
@@ -87,37 +58,20 @@ func (source GenericMap[K, V]) FilterKeys(filterK func(key K) bool, filterV func
 }
 
 // 泛型map value过滤器
-func (source GenericMap[K, V]) FilterValues(filterK func(key K) bool, filterV func(val V) bool) GenericSlice[V] {
+func (source GenericMap[K, V]) FilterValues(predicate func(k K, v V) bool) GenericSlice[V] {
 	var values []V
 
 	if len(source) <= 0 {
 		return values
 	}
 
-	if filterK == nil && filterV == nil {
-		values = make([]V, len(source))
-		i := 0
-		for _, v := range source {
-			values[i] = v
-			i++
-		}
-	} else if filterK == nil {
-		for _, v := range source {
-			if filterV(v) {
-				values = append(values, v)
-			}
-		}
-	} else if filterV == nil {
-		for k, v := range source {
-			if filterK(k) {
-				values = append(values, v)
-			}
-		}
-	} else {
-		for k, v := range source {
-			if filterK(k) && filterV(v) {
-				values = append(values, v)
-			}
+	if predicate == nil {
+		return maps.Values(source)
+	}
+
+	for k, v := range source {
+		if predicate(k, v) {
+			values = append(values, v)
 		}
 	}
 
@@ -125,34 +79,20 @@ func (source GenericMap[K, V]) FilterValues(filterK func(key K) bool, filterV fu
 }
 
 // 泛型map计数
-func (source GenericMap[K, V]) Count(filterK func(key K) bool, filterV func(val V) bool) int {
+func (source GenericMap[K, V]) Count(predicate func(k K, v V) bool) int {
 	sLen := len(source)
 	if sLen <= 0 {
 		return sLen
 	}
 
-	if filterK == nil && filterV == nil {
+	if predicate == nil {
 		return sLen
 	}
 
 	count := 0
-	if filterK == nil {
-		for _, v := range source {
-			if filterV(v) {
-				count++
-			}
-		}
-	} else if filterV == nil {
-		for k, _ := range source {
-			if filterK(k) {
-				count++
-			}
-		}
-	} else {
-		for k, v := range source {
-			if filterK(k) && filterV(v) {
-				count++
-			}
+	for k, v := range source {
+		if predicate(k, v) {
+			count++
 		}
 	}
 
