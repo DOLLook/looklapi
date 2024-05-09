@@ -290,5 +290,5 @@ func (source GenericSlice[T]) Single(f func(e T) bool) (T, bool) {
 		}
 	}
 
-	return single, true
+	return single, count > 0
 }
