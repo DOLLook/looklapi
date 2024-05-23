@@ -48,7 +48,8 @@ var appConfig = struct {
 	} `yaml:"consul"`
 
 	Logger struct {
-		Default string `yaml:"default"`
+		DefaultLogger string `yaml:"default-logger"`
+		InitLevel     string `yaml:"init-level"`
 	} `yaml:"logger"`
 }{}
 

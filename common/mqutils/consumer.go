@@ -7,6 +7,7 @@ import (
 	"looklapi/common/loggers"
 	serviceDiscovery "looklapi/common/service-discovery"
 	"looklapi/common/utils"
+	appConfig "looklapi/config"
 	"looklapi/errs"
 	"reflect"
 	"time"
@@ -15,7 +16,7 @@ import (
 type consumerBinder struct {
 }
 
-// recieved app event and process.
+// received app event and process.
 // for event publish well, the developers must deal with the panic by their self
 func (binder *consumerBinder) OnApplicationEvent(event interface{}) {
 	defer loggers.RecoverLog()
@@ -31,19 +32,20 @@ func (binder *consumerBinder) OnApplicationEvent(event interface{}) {
 	loggers.GetLogger().Info("mq init complete")
 }
 
-// regiser to the application event publisher
+// register to the application event publisher
 func (binder *consumerBinder) Subscribe() {
 	appcontext.GetAppEventPublisher().Subscribe(binder, reflect.TypeOf(appcontext.AppEventBeanInjected(0)))
 }
 
 func init() {
+	if utils.IsEmpty(appConfig.AppConfig.Rabbitmq.Address) {
+		return
+	}
 	binder := &consumerBinder{}
 	binder.Subscribe()
 }
 
-/**
-绑定消费者
-*/
+// 绑定消费者
 func bindConsumer(consumer *consumer) {
 	if consumer == nil {
 		loggers.GetLogger().Error(errors.New("invalid nil consumer"))
@@ -62,11 +64,8 @@ func bindConsumer(consumer *consumer) {
 	}
 }
 
-/**
-绑定工作队列消费者
-
-consumer 消费者
-*/
+// 绑定工作队列消费者
+// consumer 消费者
 func bindWorkQueueConsumer(consumer *consumer) {
 	if consumer == nil {
 		loggers.GetLogger().Error(errors.New("invalid nil consumer"))
@@ -130,11 +129,8 @@ func bindWorkQueueConsumer(consumer *consumer) {
 	addConsumerChannel(recChan)
 }
 
-/**
-绑定广播队列消费者
-
-consumer 消费者
-*/
+// 绑定广播队列消费者
+// consumer 消费者
 func bindBroadcastConsumer(consumer *consumer) {
 	if consumer == nil {
 		loggers.GetLogger().Error(errors.New("invalid nil consumer"))
@@ -201,7 +197,7 @@ func bindBroadcastConsumer(consumer *consumer) {
 
 func consume(delivery *amqp.Delivery, consumer *consumer) {
 	content := string(delivery.Body)
-	if consumer.onRecieved(content) {
+	if consumer.onReceived(content) {
 		delivery.Ack(false)
 	} else {
 		if err := delivery.Nack(false, true); err != nil {
@@ -242,25 +238,25 @@ type consumer struct {
 func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uint32, parallel bool, maxRetry uint32, messageType reflect.Type, consume func(msg interface{}) bool) {
 	if utils.IsEmpty(routeKey) {
 		err := errs.NewBllError("invalid routekey")
-		loggers.GetBuildinLogger().Error(err)
+		loggers.GetConsoleLogger().Error(err)
 		panic(err)
 	}
 
 	if concurrency < 1 {
 		err := errs.NewBllError("workqueue consumer concurrency must greater than 0")
-		loggers.GetBuildinLogger().Error(err)
+		loggers.GetConsoleLogger().Error(err)
 		panic(err)
 	}
 
 	if prefetchCount < 1 {
 		err := errs.NewBllError("workqueue consumer prefetchCount must greater than 0")
-		loggers.GetBuildinLogger().Error(err)
+		loggers.GetConsoleLogger().Error(err)
 		panic(err)
 	}
 
 	if maxRetry < 1 {
 		err := errs.NewBllError("workqueue consumer maxRetry must greater than 0")
-		loggers.GetBuildinLogger().Error(err)
+		loggers.GetConsoleLogger().Error(err)
 		panic(err)
 	}
 
@@ -282,13 +278,13 @@ func NewWorkQueueConsumer(routeKey string, concurrency uint32, prefetchCount uin
 func NewBroadcastConsumer(exchange string, maxRetry uint32, messageType reflect.Type, consume func(msg interface{}) bool) {
 	if utils.IsEmpty(exchange) {
 		err := errs.NewBllError("invalid exchange")
-		loggers.GetBuildinLogger().Error(err)
+		loggers.GetConsoleLogger().Error(err)
 		panic(err)
 	}
 
 	if maxRetry < 1 {
 		err := errs.NewBllError("broadcast consumer maxRetry must greater than 0")
-		loggers.GetBuildinLogger().Error(err)
+		loggers.GetConsoleLogger().Error(err)
 		panic(err)
 	}
 
@@ -304,7 +300,7 @@ func NewBroadcastConsumer(exchange string, maxRetry uint32, messageType reflect.
 }
 
 // 接收到消息
-func (consumer *consumer) onRecieved(msg string) (result bool) {
+func (consumer *consumer) onReceived(msg string) (result bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			if tr, ok := err.(error); ok {

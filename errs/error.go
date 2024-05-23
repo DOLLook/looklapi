@@ -2,6 +2,7 @@ package errs
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"strings"
 )
 
@@ -24,8 +25,17 @@ func (e *BllError) Error() string {
 }
 
 // 获取堆栈
-func (e *BllError) StackTrace() []*formatStack {
+func (e *BllError) FormatStackTrace() []*formatStack {
 	return e.stackTrace
+}
+
+// 获取堆栈
+func (e *BllError) StackTrace() errors.StackTrace {
+	f := make([]errors.Frame, len(e.callers))
+	for i := 0; i < len(f); i++ {
+		f[i] = errors.Frame((e.callers)[i])
+	}
+	return f
 }
 
 func NewBllError(msg string) error {

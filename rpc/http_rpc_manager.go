@@ -95,7 +95,7 @@ func httpRpcWrap(srvName string, reqInterceptors []interceptor, fntyp reflect.Ty
 		header, body, urlParamSlice := reqParamGenerator(funtyp, args, alias)
 
 		var allInterceptor []interceptor
-		allInterceptor = append(allInterceptor, gloabalReqInterceptor...)
+		allInterceptor = append(allInterceptor, globalReqInterceptor...)
 		allInterceptor = append(allInterceptor, reqInterceptors...)
 		reqTemplate := &requestTemplate{
 			header:        header,
@@ -115,7 +115,7 @@ func httpRpcWrap(srvName string, reqInterceptors []interceptor, fntyp reflect.Ty
 		}
 		url = url + route
 
-		if resp, err := doRequest(method, url, reqTemplate.header, reqTemplate.body, reqTemplate.urlParamSlice); err != nil {
+		if resp, err := DoRequest(method, url, reqTemplate.header, reqTemplate.body, reqTemplate.urlParamSlice); err != nil {
 			results = append(results, reflect.ValueOf(err))
 			return
 		} else if err := json.Unmarshal(resp, respReciever.Interface()); err != nil {

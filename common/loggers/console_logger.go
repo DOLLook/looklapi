@@ -5,46 +5,47 @@ import (
 	"log"
 	"looklapi/common/appcontext"
 	"looklapi/common/utils"
+	appConfig "looklapi/config"
 	"looklapi/errs"
 	"reflect"
 	"strings"
 )
 
-type buildinLogger struct {
+// 控制台日志
+type consoleLogger struct {
 	logLevel logLevel // 日志等级
 }
 
 func init() {
-	//var logger interface{} = &buildinLogger{}
-	var logger = &buildinLogger{logLevel: _INFO}
+	var logger = &consoleLogger{logLevel: level(appConfig.AppConfig.Logger.InitLevel)}
 	logger.setLogger()
 	logger.Subscribe()
 }
 
-func (logger *buildinLogger) name() string {
-	return "buildin"
+func (logger *consoleLogger) name() string {
+	return "console"
 }
 
-func (logger *buildinLogger) setLogger() {
+func (logger *consoleLogger) setLogger() {
 	setLogger(logger)
 }
 
-// recieved app event and process.
+// received app event and process.
 // for event publish well, the developers must deal with the panic by their self
-func (logger *buildinLogger) OnApplicationEvent(event interface{}) {
+func (logger *consoleLogger) OnApplicationEvent(event interface{}) {
 	if event, ok := event.(*ConfigLog); ok {
 		logger.logLevel = logLevel(event.LogLevel)
 	}
 }
 
-// regiser to the application event publisher
-// @eventType the event type which the observer intrested in
-func (logger *buildinLogger) Subscribe() {
+// register to the application event publisher
+// @eventType the event type which the observer interested in
+func (logger *consoleLogger) Subscribe() {
 	appcontext.GetAppEventPublisher().Subscribe(logger, reflect.TypeOf(&ConfigLog{}))
 }
 
 // 调试日志
-func (logger *buildinLogger) Debug(msg string) {
+func (logger *consoleLogger) Debug(msg string) {
 	if logger.logLevel < _DEBUG {
 		return
 	}
@@ -63,7 +64,7 @@ func (logger *buildinLogger) Debug(msg string) {
 }
 
 // 提示
-func (logger *buildinLogger) Info(msg string) {
+func (logger *consoleLogger) Info(msg string) {
 	if logger.logLevel < _INFO {
 		return
 	}
@@ -82,7 +83,7 @@ func (logger *buildinLogger) Info(msg string) {
 }
 
 // 警告
-func (logger *buildinLogger) Warn(msg string) {
+func (logger *consoleLogger) Warn(msg string) {
 	if logger.logLevel < _WARN {
 		return
 	}
@@ -101,7 +102,7 @@ func (logger *buildinLogger) Warn(msg string) {
 }
 
 // 错误日志
-func (logger *buildinLogger) Error(err error) {
+func (logger *consoleLogger) Error(err error) {
 	if logger.logLevel < _ERROR {
 		return
 	}
@@ -113,7 +114,7 @@ func (logger *buildinLogger) Error(err error) {
 	stackTrace := ""
 	if berr, ok := err.(*errs.BllError); ok {
 		var trace []string
-		for _, stack := range berr.StackTrace() {
+		for _, stack := range berr.FormatStackTrace() {
 			if stack.Invalid() {
 				trace = append(trace, "\n\t"+stack.Method())
 			} else {

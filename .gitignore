@@ -16,6 +16,7 @@
 
 .git/
 .idea/
+/log/
 
 go.sum
 *test.go

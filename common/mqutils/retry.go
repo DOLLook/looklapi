@@ -13,24 +13,25 @@ import (
 
 const _RetryCollectionName = "mq_msg_retry" // 重试记录表
 
-/**
-重试消息
-*/
+// 重试消息
 func retry(metaMsg *mqMessage, consumer *consumer) bool {
+	if !mongoutils.ClientIsValid() {
+		loggers.GetLogger().Warn("mq process failed, but retry policy not enabled.")
+		return true
+	}
+
 	switch consumer.Type {
 	case _WorkQueue:
 		return retryWorker(metaMsg, consumer.RouteKey, consumer.MaxRetry)
 	case _Broadcast:
 		return retryBroadcast(metaMsg, consumer.Exchange, consumer.MaxRetry)
 	default:
-		loggers.GetLogger().Warn("unvalid consumer type")
+		loggers.GetLogger().Warn("invalid consumer type")
 		return false
 	}
 }
 
-/**
-重试工作队列消息
-*/
+// 重试工作队列消息
 func retryWorker(metaMsg *mqMessage, routeKey string, maxRetry uint32) bool {
 	mqRetry := &mqMsgRetry{
 		Id:          primitive.NewObjectID().Hex(),
@@ -74,9 +75,7 @@ func retryWorker(metaMsg *mqMessage, routeKey string, maxRetry uint32) bool {
 	return PubWorkQueueMsg(routeKey, metaMsg)
 }
 
-/**
-重试广播队列消息
-*/
+// 重试广播队列消息
 func retryBroadcast(metaMsg *mqMessage, exchange string, maxRetry uint32) bool {
 	retrycount := getRetryCount(metaMsg.Guid, metaMsg.Timespan, true)
 	if retrycount != utils.MaxInt32 && retrycount >= int32(maxRetry) {
@@ -120,10 +119,12 @@ func retryBroadcast(metaMsg *mqMessage, exchange string, maxRetry uint32) bool {
 	return result
 }
 
-/**
-重试成功
-*/
+// 重试成功
 func retrySuccess(metaMsg *mqMessage, csType consumerType) {
+	if !mongoutils.ClientIsValid() {
+		return
+	}
+
 	if metaMsg == nil || utils.IsEmpty(metaMsg.Guid) {
 		return
 	}
@@ -157,9 +158,7 @@ func retrySuccess(metaMsg *mqMessage, csType consumerType) {
 	}
 }
 
-/**
-获取重试次数
-*/
+// 获取重试次数
 func getRetryCount(guid string, timespan time.Time, isBroadcast bool) int32 {
 
 	if utils.IsEmpty(guid) {
@@ -190,9 +189,7 @@ func getRetryCount(guid string, timespan time.Time, isBroadcast bool) int32 {
 	return result
 }
 
-/**
-新增或更新
-*/
+// 新增或更新
 func addOrUpdate(model *mqMsgRetry) bool {
 	if model == nil || utils.IsEmpty(model.Guid) || utils.IsEmpty(model.Key) {
 		return false

@@ -2,7 +2,6 @@ package loggers
 
 import (
 	"looklapi/common/appcontext"
-	"looklapi/common/redisutils"
 	"looklapi/common/utils"
 	appConfig "looklapi/config"
 	"reflect"
@@ -32,18 +31,15 @@ type Logger interface {
 type logManager struct {
 }
 
-// recieved app event and process.
+// received app event and process.
 // for event publish well, the developers must deal with the panic by their self
 func (manager *logManager) OnApplicationEvent(event interface{}) {
-	logConfig := &ConfigLog{}
-	if err := redisutils.Get(redisutils.CONFIG_LOG, logConfig); err != nil {
-		GetLogger().Error(err)
-	} else {
-		appcontext.GetAppEventPublisher().PublishEvent(logConfig)
-	}
+	// todo may be reset log level from load remote config when AppEventBeanInjected
+	//logConfig := &ConfigLog{}
+	//appcontext.GetAppEventPublisher().PublishEvent(logConfig)
 }
 
-// regiser to the application event publisher
+// register to the application event publisher
 func (manager *logManager) Subscribe() {
 	appcontext.GetAppEventPublisher().Subscribe(manager, reflect.TypeOf(appcontext.AppEventBeanInjected(0)))
 }
@@ -74,7 +70,7 @@ const (
 var _level = _OFF
 var _loggers []Logger     // logger容器
 var _defaultLogger Logger // 默认logger
-var _buildinLogger Logger // 内置logger
+var _consoleLogger Logger // 内置logger
 
 func setLogger(logger Logger) {
 	if logger == nil {
@@ -86,12 +82,12 @@ func setLogger(logger Logger) {
 
 	_loggers = append(_loggers, logger)
 
-	if logger.name() == appConfig.AppConfig.Logger.Default {
+	if logger.name() == appConfig.AppConfig.Logger.DefaultLogger {
 		_defaultLogger = logger
 	}
 
-	if logger.name() == "buildin" {
-		_buildinLogger = logger
+	if logger.name() == "console" {
+		_consoleLogger = logger
 	}
 }
 
@@ -100,9 +96,9 @@ func GetLogger() Logger {
 	return _defaultLogger
 }
 
-// 获取内置looger
-func GetBuildinLogger() Logger {
-	return _buildinLogger
+// 获取内置looker
+func GetConsoleLogger() Logger {
+	return _consoleLogger
 }
 
 //func getTrace(){
@@ -150,7 +146,30 @@ func levelName(level logLevel) string {
 		return "ERROR"
 	case _FATAL:
 		return "FATAL"
+	case _ALL:
+		return "ALL"
 	default:
 		return ""
+	}
+}
+
+func level(level string) logLevel {
+	switch strings.ToUpper(level) {
+	case "DEBUG":
+		return _DEBUG
+	case "INFO":
+		return _INFO
+	case "WARN":
+		return _WARN
+	case "ERROR":
+		return _ERROR
+	case "FATAL":
+		return _FATAL
+	case "ALL":
+		return _ALL
+	case "OFF":
+		return _OFF
+	default:
+		return _INFO
 	}
 }

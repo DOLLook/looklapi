@@ -24,7 +24,7 @@ func (ctr *serviceController) apiParty() string {
 }
 
 // 注册路由
-func (ctr *serviceController) RegistRoute(irisApp *iris.Application) {
+func (ctr *serviceController) RegisterRoute(irisApp *iris.Application) {
 	ctr.app = irisApp
 	party := ctr.app.Party(ctr.apiParty())
 
@@ -32,9 +32,7 @@ func (ctr *serviceController) RegistRoute(irisApp *iris.Application) {
 	party.Get("/healthCheck", ctr.healthCheck)
 }
 
-/**
-服务健康检查
-*/
+// 服务健康检查
 func (ctr *serviceController) healthCheck(ctx iris.Context) {
 
 	if !ctr.appInitCompleted {

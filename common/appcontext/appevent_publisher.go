@@ -27,7 +27,7 @@ func GetAppEventPublisher() *appEventPublisher {
 }
 
 // register observer to the application event publisher
-// @eventType the event type which the observer intrested in
+// @eventType the event type which the observer interested in
 func (publisher *appEventPublisher) Subscribe(observer AppObserver, eventType reflect.Type) {
 	if observer == nil || eventType == nil {
 		return

@@ -33,29 +33,31 @@ func init() {
 	svManager.Subscribe()
 }
 
-// recieved app event and process.
+// received app event and process.
 // for event publish well, the developers must deal with the panic by their self
 func (manager *serviceManager) OnApplicationEvent(event interface{}) {
 	manager.initialize()
 }
 
-// regiser to the application event publisher
+// register to the application event publisher
 func (manager *serviceManager) Subscribe() {
 	appcontext.GetAppEventPublisher().Subscribe(manager, reflect.TypeOf(appcontext.AppEventBeanInjected(0)))
 }
 
-/**
-获取服务管理器
-*/
+// 获取服务管理器
 func GetServiceManager() *serviceManager {
 	return svManager
 }
 
-/**
-初始服务化管理器
-*/
+// 初始服务化管理器
 func (manager *serviceManager) initialize() {
 	if manager.isReady {
+		return
+	}
+
+	if utils.IsEmpty(appConfig.AppConfig.Consul.Host) || utils.IsEmpty(appConfig.AppConfig.Consul.Port) {
+		// service discovery is not enabled
+		manager.isReady = true
 		return
 	}
 
@@ -82,9 +84,7 @@ func (manager *serviceManager) initialize() {
 	manager.isReady = true
 }
 
-/**
-更新服务配置
-*/
+// 更新服务配置
 func (manager *serviceManager) UpdateManualService(manualService *modelimpl.ManualService) {
 	manager.cutoffCache = manager.cutoffCache[0:0]
 	if manualService != nil && !utils.CollectionIsEmpty(manualService.Cutoff) {
@@ -97,9 +97,7 @@ func (manager *serviceManager) UpdateManualService(manualService *modelimpl.Manu
 	}
 }
 
-/**
-更新服务自动发现健康服务
-*/
+// 更新服务自动发现健康服务
 func (manager *serviceManager) updateHealthServices() {
 	defer loggers.RecoverLog()
 
@@ -111,10 +109,8 @@ func (manager *serviceManager) updateHealthServices() {
 	manager.healthServices = convertServiceModel(hsrv)
 }
 
-/**
-获取健康的服务
-serviceName 服务名称
-*/
+// 获取健康的服务
+// serviceName 服务名称
 func (manager *serviceManager) GetHealthServices(serviceName string) []string {
 	var serviceList []string
 
@@ -143,9 +139,7 @@ func (manager *serviceManager) GetHealthServices(serviceName string) []string {
 	return serviceList
 }
 
-/**
-本机是否断流
-*/
+// 本机是否断流
 func (manager *serviceManager) IsHostCutoff() bool {
 	if !manager.isReady {
 		return false

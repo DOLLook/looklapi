@@ -1,16 +1,21 @@
-mysql: mysql://127.0.0.1:3306/test?autoReconnect=true&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&useSSL=false
+# when not use mysql, delete the config
+mysql: root:123456@tcp(127.0.0.1:3306)/testdb?charset=utf8&timeout=30s
 
+# when not use mongodb, delete the config
 mongodb_uri: mongodb://127.0.0.1:27018,127.0.0.1:27019/test?replicaSet=rs0
 
+# when not use redis, delete the config
 redis:
   host: 127.0.0.1
   port: 6379
   password: 123456
   timeout: 10000
 
+# when not use rabbitmq, delete the config
 rabbitmq:
   address: amqp://guest:guest@127.0.0.1:5672/yq
 
+# when not use consul, delete the config
 consul:
   host: 127.0.0.1
   port: 8500
@@ -21,4 +26,7 @@ consul:
   deregister-critical-service-after: 600s
 
 logger:
-  default: buildin
+  # logger name: file, console, mongo. when use mongo, must set mongo config
+  default-logger: file
+  # default logger level: debug, info, warn, error, fatal, all, off
+  init-level: info

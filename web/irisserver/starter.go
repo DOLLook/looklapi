@@ -33,7 +33,7 @@ func Start() {
 		app.Shutdown(ctx)
 	})
 
-	registRoute(app)
+	registerRoute(app)
 
 	cfg := iris.WithConfiguration(iris.Configuration{
 		DisableStartupLog:                 false,

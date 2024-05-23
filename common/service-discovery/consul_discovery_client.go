@@ -19,9 +19,7 @@ type consulServiceRegistry struct {
 
 var serviceRegistry *consulServiceRegistry
 
-/**
-注册服务
-*/
+// 注册服务
 func register() {
 	serviceRegistry = new(consulServiceRegistry)
 	serviceRegistry.registration = generateAgentServiceRegistration()
@@ -43,9 +41,7 @@ func register() {
 	loggers.GetLogger().Info("consul register success")
 }
 
-/**
-获取所有健康服务
-*/
+// 获取所有健康服务
 func getAllHealthServices() (map[string][]*consulApi.AgentService, error) {
 	serviceMap, err := serviceRegistry.client.Agent().Services()
 	if err != nil {

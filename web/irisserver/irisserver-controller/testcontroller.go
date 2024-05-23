@@ -31,7 +31,7 @@ func (ctr *testController) apiParty() string {
 }
 
 // 注册路由
-func (ctr *testController) RegistRoute(irisApp *iris.Application) {
+func (ctr *testController) RegisterRoute(irisApp *iris.Application) {
 	ctr.app = irisApp
 
 	//// 注入依赖

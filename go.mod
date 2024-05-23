@@ -6,18 +6,22 @@ toolchain go1.21.6
 
 require (
 	github.com/garyburd/redigo v1.6.2
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofrs/uuid v4.1.0+incompatible
 	github.com/hashicorp/consul/api v1.10.0
 	github.com/iris-contrib/middleware/cors v0.0.0-20201012144513-9d3d1026d313
 	github.com/json-iterator/go v1.1.12
 	github.com/kataras/iris/v12 v12.2.10
 	github.com/robfig/cron/v3 v3.0.0
+	github.com/rs/zerolog v1.15.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/streadway/amqp v1.0.0
 	github.com/valyala/fasthttp v1.31.0
 	go.mongodb.org/mongo-driver v1.7.3
 	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
+	xorm.io/xorm v1.2.5
 )
 
 require (
@@ -33,9 +37,9 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/flosch/pongo2/v4 v4.0.2 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/goccy/go-json v0.7.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gomarkdown/markdown v0.0.0-20231222211730-1d6d20845b47 // indirect
-	github.com/google/btree v1.0.0 // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/hashicorp/consul/sdk v0.8.0 // indirect
@@ -72,6 +76,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/schollz/closestmatch v2.1.0+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/tdewolff/minify/v2 v2.20.14 // indirect
 	github.com/tdewolff/parse/v2 v2.7.8 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -91,4 +96,5 @@ require (
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	xorm.io/builder v0.3.9 // indirect
 )

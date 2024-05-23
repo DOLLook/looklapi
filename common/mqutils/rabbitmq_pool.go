@@ -17,6 +17,10 @@ var _rabbitmqConnPool *rabbitmqConnPool // mq连接池
 var _idlClearTask *cron.Cron            // 空闲连接清理任务
 
 func init() {
+	if utils.IsEmpty(appConfig.AppConfig.Rabbitmq.Address) {
+		return
+	}
+
 	_rabbitmqConnPool = &rabbitmqConnPool{
 		connStr: appConfig.AppConfig.Rabbitmq.Address,
 
@@ -115,10 +119,8 @@ func getConsumerChannel() (*mqChannel, error) {
 	return channel, nil
 }
 
-/**
-尝试获取有效的发布通道
-maxTry 最大重试次数
-*/
+// 尝试获取有效的发布通道
+// maxTry 最大重试次数
 func tryGetPubChannel(maxTry int) (*mqChannel, error) {
 	if maxTry <= 1 {
 		return getPubChannel()

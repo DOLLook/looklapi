@@ -24,8 +24,12 @@ const (
 
 var mongoUri = appConfig.AppConfig.MongodbUri
 var mongoClient *mongo.Client
+var clientInitialized = false
 
 func init() {
+	if utils.IsEmpty(mongoUri) {
+		return
+	}
 	timeDecoder := bsoncodec.NewTimeCodec(bsonoptions.TimeCodec().SetUseLocalTimeZone(true))
 	registry := bson.NewRegistryBuilder().
 		RegisterCodec(reflect.TypeOf((*decimal.Decimal)(nil)).Elem(), mongoDecimal{}).
@@ -36,6 +40,11 @@ func init() {
 		options.Client().ApplyURI(mongoUri).SetRegistry(registry))
 
 	mongoClient = client
+	clientInitialized = true
+}
+
+func ClientIsValid() bool {
+	return clientInitialized
 }
 
 // 获取数据库

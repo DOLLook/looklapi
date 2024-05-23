@@ -39,9 +39,18 @@ func (t *requestTemplate) getHeader(name string) string {
 	return t.header.Get(name)
 }
 
+// 删除请求头
+func (t *requestTemplate) delHeader(name string) {
+	if utils.IsEmpty(name) || t.header == nil {
+		return
+	}
+
+	t.header.Del(name)
+}
+
 type interceptor func(*requestTemplate)
 
-var gloabalReqInterceptor = []interceptor{
+var globalReqInterceptor = []interceptor{
 
 	// 示例: 在此构造全局统一请求头
 	func(template *requestTemplate) {

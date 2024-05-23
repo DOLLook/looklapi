@@ -6,8 +6,8 @@ import (
 )
 
 // 注册路由
-func registRoute(irisApp *iris.Application) {
+func registerRoute(irisApp *iris.Application) {
 	for _, api := range irisserver_controller.ApiSlice {
-		api.RegistRoute(irisApp)
+		api.RegisterRoute(irisApp)
 	}
 }

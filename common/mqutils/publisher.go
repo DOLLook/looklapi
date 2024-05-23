@@ -4,10 +4,16 @@ import (
 	"github.com/streadway/amqp"
 	"looklapi/common/loggers"
 	"looklapi/common/utils"
+	appConfig "looklapi/config"
 )
 
 // 发布工作队列消息
 func PubWorkQueueMsg(routeKey string, msg interface{}) bool {
+	if utils.IsEmpty(appConfig.AppConfig.Rabbitmq.Address) {
+		loggers.GetLogger().Warn("mq is not enabled")
+		return false
+	}
+
 	if utils.IsEmpty(routeKey) {
 		return false
 	}
@@ -28,6 +34,10 @@ func PubWorkQueueMsg(routeKey string, msg interface{}) bool {
 
 // 发布广播消息
 func PubBroadcastMsg(exchange string, msg interface{}) bool {
+	if utils.IsEmpty(appConfig.AppConfig.Rabbitmq.Address) {
+		loggers.GetLogger().Warn("mq is not enabled")
+		return false
+	}
 	if utils.IsEmpty(exchange) {
 		return false
 	}

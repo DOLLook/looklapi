@@ -12,41 +12,48 @@ import (
 	"strings"
 )
 
-type mongoLoger struct {
+// mongo日志
+type mongoLogger struct {
 	logLevel logLevel // 日志等级
 }
 
 func init() {
-	//var logger interface{} = &mongoLoger{}
-	var logger = &mongoLoger{logLevel: _INFO}
+	var logger = &mongoLogger{logLevel: level(config.AppConfig.Logger.InitLevel)}
+	if config.AppConfig.Logger.DefaultLogger != logger.name() {
+		return
+	}
+	if !mongoutils.ClientIsValid() {
+		panic(fmt.Sprintf("mongo client is not valid, please check the config"))
+	}
+
 	logger.setLogger()
 	logger.Subscribe()
 }
 
-func (logger *mongoLoger) name() string {
+func (logger *mongoLogger) name() string {
 	return "mongo"
 }
 
-func (logger *mongoLoger) setLogger() {
+func (logger *mongoLogger) setLogger() {
 	setLogger(logger)
 }
 
-// recieved app event and process.
+// received app event and process.
 // for event publish well, the developers must deal with the panic by their self
-func (logger *mongoLoger) OnApplicationEvent(event interface{}) {
+func (logger *mongoLogger) OnApplicationEvent(event interface{}) {
 	if event, ok := event.(*ConfigLog); ok {
 		logger.logLevel = logLevel(event.LogLevel)
 	}
 }
 
-// regiser to the application event publisher
-// @eventType the event type which the observer intrested in
-func (logger *mongoLoger) Subscribe() {
+// register to the application event publisher
+// @eventType the event type which the observer interested in
+func (logger *mongoLogger) Subscribe() {
 	appcontext.GetAppEventPublisher().Subscribe(logger, reflect.TypeOf(&ConfigLog{}))
 }
 
 // 调试日志
-func (logger *mongoLoger) Debug(msg string) {
+func (logger *mongoLogger) Debug(msg string) {
 	if logger.logLevel < _DEBUG {
 		return
 	}
@@ -87,7 +94,7 @@ func (logger *mongoLoger) Debug(msg string) {
 }
 
 // 提示
-func (logger *mongoLoger) Info(msg string) {
+func (logger *mongoLogger) Info(msg string) {
 	if logger.logLevel < _INFO {
 		return
 	}
@@ -128,7 +135,7 @@ func (logger *mongoLoger) Info(msg string) {
 }
 
 // 警告
-func (logger *mongoLoger) Warn(msg string) {
+func (logger *mongoLogger) Warn(msg string) {
 	if logger.logLevel < _WARN {
 		return
 	}
@@ -169,7 +176,7 @@ func (logger *mongoLoger) Warn(msg string) {
 }
 
 // 错误日志
-func (logger *mongoLoger) Error(err error) {
+func (logger *mongoLogger) Error(err error) {
 	if logger.logLevel < _ERROR {
 		return
 	}
@@ -186,7 +193,7 @@ func (logger *mongoLoger) Error(err error) {
 
 	if berr, ok := err.(*errs.BllError); ok {
 		var trace []string
-		for _, stack := range berr.StackTrace() {
+		for _, stack := range berr.FormatStackTrace() {
 			if stack.Invalid() {
 				trace = append(trace, stack.Method()+"\n")
 			} else {
