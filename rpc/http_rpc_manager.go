@@ -15,7 +15,11 @@ import (
 )
 
 type RpcService interface {
+	// when you use service discovery, define your service name here. And the request send by framework will find the healthy endpoint of the service.
 	SrvName() string
+	// when you not use service discovery, specify a constant endpoint for request.
+	// notice: if you use endpoint, the SrvName set for service discovery will be ignored.
+	EndPoint() string
 	RequestInterceptor() []interceptor
 }
 
@@ -24,9 +28,12 @@ var srvMap = make(map[string]RpcService)
 var headerType = reflect.TypeOf((*http.Header)(nil)).Elem()
 var nilErrValue = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem())
 
+// 没有健康服务异常
+var NoHealthServiceErr = errors.New("can't find health service")
+
 // 获取调用客户端
-func GetHttpRpcClient(srvName utils.EnumServiceName) RpcService {
-	return srvMap[string(srvName)]
+func GetHttpRpcClient(srvName string) RpcService {
+	return srvMap[srvName]
 }
 
 // register service
@@ -56,12 +63,12 @@ func srvGenerator(srv RpcService) {
 	for i := 0; i < srvTyp.NumField(); i++ {
 		fn := srvTyp.Field(i)
 		reqMethod, reqRoute, aliasSlice := apiDefCheck(fn, srv.SrvName())
-		fnWrap := reflect.MakeFunc(fn.Type, httpRpcWrap(srv.SrvName(), srv.RequestInterceptor(), fn.Type, reqMethod, reqRoute, aliasSlice))
+		fnWrap := reflect.MakeFunc(fn.Type, httpRpcWrap(srv.SrvName(), srv.RequestInterceptor(), fn.Type, srv.EndPoint(), reqMethod, reqRoute, aliasSlice))
 		srvVal.Field(i).Set(fnWrap)
 	}
 }
 
-func httpRpcWrap(srvName string, reqInterceptors []interceptor, fntyp reflect.Type, reqMethod string, reqRoute string, aliasSlice []string) func(args []reflect.Value) (results []reflect.Value) {
+func httpRpcWrap(srvName string, reqInterceptors []interceptor, fntyp reflect.Type, endpoint string, reqMethod string, reqRoute string, aliasSlice []string) func(args []reflect.Value) (results []reflect.Value) {
 
 	return func(args []reflect.Value) (results []reflect.Value) {
 
@@ -83,7 +90,7 @@ func httpRpcWrap(srvName string, reqInterceptors []interceptor, fntyp reflect.Ty
 		arglen := len(args)
 		respReciever := args[arglen-1]
 		if respReciever.IsNil() {
-			results = append(results, reflect.ValueOf(errors.New("response result reciever can not be null pointer")))
+			results = append(results, reflect.ValueOf(errors.New("response result receiver can not be nil pointer")))
 			return
 		}
 
@@ -108,7 +115,7 @@ func httpRpcWrap(srvName string, reqInterceptors []interceptor, fntyp reflect.Ty
 			}
 		}
 
-		url, err := getEndpoint(serviceName)
+		url, err := getEndpoint(serviceName, endpoint)
 		if err != nil {
 			results = append(results, reflect.ValueOf(err))
 			return
@@ -294,17 +301,22 @@ func reqParamGenerator(fntyp reflect.Type, args []reflect.Value, alias []string)
 	return
 }
 
-// get the service uri, you can define your own service uri generator hear.
-func getEndpoint(srvName string) (endpoint string, err error) {
-	srvslice := service_discovery.GetServiceManager().GetHealthServices(srvName)
-	srvlen := len(srvslice)
-	if srvlen < 1 {
-		return "", errors.New("can't find health service")
-	} else if srvlen == 1 {
-		return "http://" + srvslice[0], nil
+// get request uri.
+func getEndpoint(srvName string, constantEndpoint string) (endpoint string, err error) {
+	if !utils.IsEmpty(constantEndpoint) {
+		return constantEndpoint, nil
+	}
+
+	// todo define your healthy service policy below.
+	srvSlice := service_discovery.GetServiceManager().GetHealthServices(srvName)
+	srvLen := len(srvSlice)
+	if srvLen < 1 {
+		return "", NoHealthServiceErr
+	} else if srvLen == 1 {
+		return "http://" + srvSlice[0], nil
 	} else {
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		idx := r.Intn(srvlen)
-		return "http://" + srvslice[idx], nil
+		idx := r.Intn(srvLen)
+		return "http://" + srvSlice[idx], nil
 	}
 }

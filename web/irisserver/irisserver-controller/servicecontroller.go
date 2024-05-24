@@ -4,7 +4,9 @@ import (
 	"github.com/kataras/iris/v12"
 	"looklapi/common/appcontext"
 	serviceDiscovery "looklapi/common/service-discovery"
+	"looklapi/common/wireutils"
 	"net/http"
+	"reflect"
 )
 
 type serviceController struct {
@@ -12,11 +14,9 @@ type serviceController struct {
 	appInitCompleted bool
 }
 
-var serviceApi *serviceController
-
 func init() {
-	serviceApi = &serviceController{}
-	ApiSlice = append(ApiSlice, serviceApi)
+	serviceApi := &serviceController{}
+	wireutils.Bind(reflect.TypeOf((*ApiController)(nil)).Elem(), serviceApi, false, 1)
 }
 
 func (ctr *serviceController) apiParty() string {

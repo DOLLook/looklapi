@@ -21,13 +21,13 @@ func init() {
 
 // 代理实现
 func (proxy *testSrvProxy) TestLogProxyVersion(log string) error {
-	loggers.GetLogger().Debug("before proxy log")
+	loggers.GetLogger().Info("before proxy log")
 
 	if err := proxy.TestSrvInterface.TestLogProxyVersion(log); err != nil {
 		return err
 	}
 
-	loggers.GetLogger().Debug("after proxy log")
+	loggers.GetLogger().Info("after proxy log")
 
 	return nil
 }

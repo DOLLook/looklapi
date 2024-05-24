@@ -2,7 +2,7 @@ package irisserver_controller
 
 import (
 	"context"
-	iris "github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12"
 	"looklapi/common/utils"
 	"looklapi/common/wireutils"
 	"looklapi/errs"
@@ -18,12 +18,9 @@ type testController struct {
 	testSrv srv_isrv.TestSrvInterface `wired:"Autowired"`
 }
 
-var testApi *testController
-
 func init() {
-	testApi = &testController{}
-	ApiSlice = append(ApiSlice, testApi)
-	wireutils.Bind(reflect.TypeOf((*testController)(nil)).Elem(), testApi, false, 1)
+	testApi := &testController{}
+	wireutils.Bind(reflect.TypeOf((*ApiController)(nil)).Elem(), testApi, false, 1)
 }
 
 func (ctr *testController) apiParty() string {
@@ -48,6 +45,17 @@ func (ctr *testController) RegisterRoute(irisApp *iris.Application) {
 		nil,
 		nil)
 
+	// 绑定路由
+	irisserver_middleware.RegisterController(
+		ctr.app,
+		ctr.apiParty(),
+		"/proxy",
+		http.MethodGet,
+		ctr.testLogProxy,
+		ctr.testLogParamValidator,
+		nil,
+		nil)
+
 	irisserver_middleware.RegisterController(
 		ctr.app,
 		ctr.apiParty(),
@@ -64,13 +72,18 @@ func (ctr *testController) testLog(log string) error {
 	return ctr.testSrv.TestLog(log)
 }
 
+// test log api
+func (ctr *testController) testLogProxy(log string) error {
+	return ctr.testSrv.TestLogProxyVersion(log)
+}
+
 // test log with result and context api
-func (ctr *testController) testLogWithResult(context context.Context, log string) (*modelbase.ResponseResult, error) {
+func (ctr *testController) testLogWithResult(ctx context.Context, log string) (*modelbase.ResponseResult, error) {
 	if err := ctr.testSrv.TestLog(log); err != nil {
 		return nil, err
 	}
 
-	httpHeader := context.Value(utils.HttpRequestHeader).(http.Header)
+	httpHeader := utils.GetHttpHeader(ctx)
 	return modelbase.NewResponse(utils.StructToJson(httpHeader)), nil
 }
 
@@ -84,7 +97,7 @@ func (ctr *testController) testLogParamValidator(log string) error {
 }
 
 // testLog参数校验
-func (ctr *testController) testLogWithResultParamValidator(context context.Context, log string) error {
+func (ctr *testController) testLogWithResultParamValidator(ctx context.Context, log string) error {
 	if utils.IsEmpty(log) {
 		return errs.NewBllError("参数错误")
 	}

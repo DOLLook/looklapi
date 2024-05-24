@@ -22,9 +22,3 @@ const (
 
 const HttpRequestHeader = "Http-Request-Header"
 const HttpContextStore = "Http-Context-Store"
-
-type EnumServiceName string
-
-const (
-	TEST_SERVICE EnumServiceName = "testService"
-)

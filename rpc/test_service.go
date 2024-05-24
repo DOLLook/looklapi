@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"looklapi/common/utils"
 	"looklapi/model/modelbase"
 	"net/http"
 )
@@ -19,7 +18,14 @@ type TestService struct {
 }
 
 func (srv *TestService) SrvName() string {
-	return string(utils.TEST_SERVICE)
+	// when you use service discovery, define your service name here. And the request send by framework will find the healthy endpoint of the service.
+	return "your-service-name"
+}
+
+func (srv *TestService) EndPoint() string {
+	// when you not use service discovery, specify a constant endpoint for request.
+	// notice: if you use endpoint, the SrvName set for service discovery will be ignored.
+	return "https://your.service.com"
 }
 
 func (srv *TestService) RequestInterceptor() []interceptor {

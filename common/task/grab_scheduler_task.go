@@ -10,17 +10,17 @@ import (
 )
 
 // grab task interface based on redis
-type grabSchedulerTask interface {
+type GrabSchedulerTask interface {
 	// task executor
-	executor() func()
+	Executor() func()
 	// use a redis key as hold flag
-	redisHoldKey() string
+	RedisHoldKey() string
 	// redis lock key
-	redisLockerKey() string
+	RedisLockerKey() string
 	// the key hold max seconds. the hold key will be released by redis automatically when timeout.
-	redisKeyHoldSecs() int
+	RedisKeyHoldSecs() int
 	// start the task
-	startTask(execWrapper func())
+	StartTask(execWrapper func())
 }
 
 // task manager
@@ -51,35 +51,35 @@ func (manager *grabSchedulerTaskManager) OnApplicationEvent(event interface{}) {
 		}
 	}()
 
-	for _, task := range wireutils.ResovleAll(reflect.TypeOf((*grabSchedulerTask)(nil)).Elem()) {
-		if task, ok := task.(grabSchedulerTask); ok {
-			task.startTask(manager.wrapper(task))
+	for _, task := range wireutils.ResovleAll(reflect.TypeOf((*GrabSchedulerTask)(nil)).Elem()) {
+		if task, ok := task.(GrabSchedulerTask); ok {
+			task.StartTask(manager.wrapper(task))
 		}
 	}
 	manager.init = true
 }
 
-func (manager *grabSchedulerTaskManager) wrapper(task grabSchedulerTask) func() {
+func (manager *grabSchedulerTaskManager) wrapper(task GrabSchedulerTask) func() {
 	return func() {
 		defer loggers.RecoverLog()
 		grab := manager.grab(task)
 		if grab {
-			task.executor()()
+			task.Executor()()
 		}
 	}
 }
 
 // grab the hold key
-func (manager *grabSchedulerTaskManager) grab(task grabSchedulerTask) bool {
+func (manager *grabSchedulerTaskManager) grab(task GrabSchedulerTask) bool {
 	doing := false
 	if _, err := redisutils.LockAction(func() error {
-		if exist, _ := redisutils.Exist(task.redisHoldKey()); exist {
+		if exist, _ := redisutils.Exist(task.RedisHoldKey()); exist {
 			doing = true
 			return nil
 		}
-		return redisutils.SetEx(task.redisHoldKey(), 1, task.redisKeyHoldSecs())
+		return redisutils.SetEx(task.RedisHoldKey(), 1, task.RedisKeyHoldSecs())
 
-	}, task.redisLockerKey(), 10); err != nil {
+	}, task.RedisLockerKey(), 10); err != nil {
 		return false
 	}
 
@@ -87,10 +87,10 @@ func (manager *grabSchedulerTaskManager) grab(task grabSchedulerTask) bool {
 }
 
 // manual release hold key
-func (manager *grabSchedulerTaskManager) release(grab bool, task grabSchedulerTask) {
+func (manager *grabSchedulerTaskManager) release(grab bool, task GrabSchedulerTask) {
 	if grab {
-		if err := redisutils.Del(task.redisHoldKey()); err != nil {
-			loggers.GetLogger().Warn(fmt.Sprintf("holdkey:%s realse failed", task.redisHoldKey()))
+		if err := redisutils.Del(task.RedisHoldKey()); err != nil {
+			loggers.GetLogger().Warn(fmt.Sprintf("holdkey:%s realse failed", task.RedisHoldKey()))
 			loggers.GetLogger().Error(err)
 		}
 	}
