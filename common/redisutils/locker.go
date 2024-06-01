@@ -29,7 +29,7 @@ func TryLock(lockName string, timeoutSecs int32) (bool, int64, error) {
 		}
 
 		time.Sleep(1 * time.Millisecond)
-		if time.Now().UnixNano()-begin >= int64(timeoutSecs*1000*1000*1000) {
+		if time.Now().UnixNano()-begin >= int64(timeoutSecs)*1000*1000*1000 {
 			result = false
 			break
 		}
