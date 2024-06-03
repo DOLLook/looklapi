@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 var address = config.AppConfig.Redis.Host + ":" + config.AppConfig.Redis.Port
@@ -53,9 +54,9 @@ func getConn0(db uint8) redis.Conn {
 
 func newPool(db uint8) *redis.Pool {
 	return &redis.Pool{ //实例化一个连接池
-		MaxIdle:     16,  //最初的连接数量
-		MaxActive:   500, //连接池最大连接数量,不确定可以用0（0表示自动定义），按需分配
-		IdleTimeout: 300, //连接关闭时间 300秒 （300秒不使用自动关闭）
+		MaxIdle:     16,                //最初的连接数量
+		MaxActive:   500,               //连接池最大连接数量,不确定可以用0（0表示自动定义），按需分配
+		IdleTimeout: 300 * time.Second, //连接关闭时间 300秒 （300秒不使用自动关闭）
 		Wait:        true,
 		Dial: func() (redis.Conn, error) { //要连接的redis数据库
 			return redis.Dial(_NETWORK, address, pwdOption, redis.DialDatabase(int(db)))
