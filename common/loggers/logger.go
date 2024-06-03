@@ -1,6 +1,7 @@
 package loggers
 
 import (
+	"github.com/pkg/errors"
 	"looklapi/common/appcontext"
 	"looklapi/common/utils"
 	appConfig "looklapi/config"
@@ -26,6 +27,10 @@ type Logger interface {
 	name() string
 
 	setLogger()
+}
+
+type stackTracer interface {
+	StackTrace() errors.StackTrace
 }
 
 type logManager struct {

@@ -9,6 +9,7 @@ import (
 	"looklapi/errs"
 	"looklapi/model/mongo"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -205,6 +206,42 @@ func (logger *mongoLogger) Error(err error) {
 			}
 		}
 		log.Stacktrace = strings.Join(trace, "\n")
+	} else if serr, ok := err.(stackTracer); ok {
+		st := serr.StackTrace()
+		stack := fmt.Sprintf("%+v", st)
+		lines := make([]string, 0)
+		prefix := ""
+		for _, line := range strings.Split(stack, "\n") {
+			if len(strings.TrimSpace(line)) < 1 {
+				continue
+			}
+
+			fileLine := false
+			splits := strings.Split(line, ":")
+			if len(splits) > 1 {
+				if _, err := strconv.Atoi(splits[len(splits)-1]); err == nil {
+					fileLine = true
+				}
+			}
+
+			if fileLine {
+				l := "\t" + prefix + strings.Split(line, prefix)[1]
+				lines = append(lines, l)
+			} else {
+				splits := strings.Split(line, "/")
+				if len(splits) > 1 {
+					prefix = splits[0] + "/"
+				} else {
+					prefix = strings.Split(line, ".")[0] + "/"
+				}
+
+				lines = append(lines, line)
+			}
+		}
+
+		splitsL0 := strings.Split(lines[1], "/")
+		log.ClassName = strings.Split(splitsL0[len(splitsL0)-1], ":")[0]
+		log.Stacktrace = strings.Join(lines, "\n")
 	} else {
 		methodName, fullFileName, fileName, lineNum := getTrace()
 		log.ClassName = fileName

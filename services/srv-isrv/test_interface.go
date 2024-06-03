@@ -1,6 +1,6 @@
 package srv_isrv
 
-// 订单接口
+// 测试接口
 type TestSrvInterface interface {
 	TestLog(log string) error
 	TestLogProxyVersion(log string) error
