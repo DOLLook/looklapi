@@ -2,20 +2,22 @@ package irisserver_controller
 
 import (
 	"context"
-	"github.com/kataras/iris/v12"
 	"looklapi/common/utils"
 	"looklapi/common/wireutils"
 	"looklapi/errs"
 	"looklapi/model/modelbase"
-	"looklapi/services/srv-isrv"
+	srv_isrv "looklapi/services/srv-isrv"
 	irisserver_middleware "looklapi/web/irisserver/irisserver-middleware"
 	"net/http"
 	"reflect"
+
+	"github.com/kataras/iris/v12"
 )
 
 type testController struct {
-	app     *iris.Application
-	testSrv srv_isrv.TestSrvInterface `wired:"Autowired"`
+	app            *iris.Application
+	testSrv        srv_isrv.TestSrvInterface     `wired:"Autowired"`
+	inheritTestSrv srv_isrv.InheritTestInterface `wired:"Autowired"`
 }
 
 func init() {
@@ -65,6 +67,16 @@ func (ctr *testController) RegisterRoute(irisApp *iris.Application) {
 		ctr.testLogWithResultParamValidator,
 		nil,
 		nil)
+
+	irisserver_middleware.RegisterController(
+		ctr.app,
+		ctr.apiParty(),
+		"/inherit",
+		http.MethodGet,
+		ctr.inheritTest,
+		nil,
+		nil,
+		nil)
 }
 
 // test log api
@@ -102,5 +114,11 @@ func (ctr *testController) testLogWithResultParamValidator(ctx context.Context, 
 		return errs.NewBllError("参数错误")
 	}
 
+	return nil
+}
+
+// inherit test api
+func (ctr *testController) inheritTest(log string) error {
+	ctr.inheritTestSrv.TestInherit(log)
 	return nil
 }
