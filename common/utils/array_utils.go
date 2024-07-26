@@ -33,6 +33,12 @@ func RuneContains(str string, checkStr string) bool {
 	return false
 }
 
+// rune长度
+func RuneLen(str string) int {
+	r := []rune(str)
+	return len(r)
+}
+
 // 判断切片是否包含元素
 func SliceContains[T comparable](sl []T, ele T) bool {
 	if len(sl) < 1 {
@@ -48,7 +54,7 @@ func SliceContains[T comparable](sl []T, ele T) bool {
 	return false
 }
 
-// 判断数组或切片是否包含元素
+// Deprecated: 判断数组或切片是否包含元素
 // arrayOrSlice 数组或切片运行时对象值
 // ele 要检查的值
 func ArrayOrSliceContains(arrayOrSlice interface{}, ele interface{}) bool {

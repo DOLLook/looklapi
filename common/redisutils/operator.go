@@ -70,6 +70,63 @@ func Get(key string, valPtr interface{}) error {
 	return parse(reply, valPtr)
 }
 
+// 模糊查询keys
+// dbIndex 数据库索引0-15
+// pattern 模式匹配规则 示例: 前缀匹配 prefix*, 后缀匹配 *suffix, 中间匹配 *mid*
+// limit 最大获取数量 0表示查询所有
+func Scan(dbIndex uint8, pattern string, limit int) ([]string, error) {
+	if dbIndex > 15 {
+		return nil, errors.New("dbIndex must in [0,15]")
+	}
+	if utils.IsEmpty(pattern) {
+		return nil, errors.New("pattern must not be empty")
+	}
+	if !strings.HasPrefix(pattern, "*") && !strings.HasSuffix(pattern, "*") {
+		return nil, errors.New("pattern must be start with * or end with *")
+	}
+
+	conn := getConn0(dbIndex)
+	if conn.Err() != nil {
+		return nil, conn.Err()
+	}
+	defer conn.Close()
+
+	keys := make([]string, 0)
+	cursor := "0"
+	for {
+		reply, err := conn.Do("SCAN", cursor, "MATCH", pattern)
+		if err != nil {
+			return nil, err
+		}
+
+		if rep, ok := reply.([]interface{}); ok && len(rep) == 2 {
+			if ks, ok := rep[1].([]interface{}); ok && len(ks) > 0 {
+				for _, item := range ks {
+					k := string(item.([]byte))
+					if !utils.IsEmpty(k) {
+						keys = append(keys, k)
+						if limit > 0 && len(keys) >= limit {
+							break
+						}
+					}
+				}
+				if limit > 0 && len(keys) >= limit {
+					break
+				}
+			}
+
+			cursor = string(rep[0].([]byte))
+			if cursor == "0" {
+				break
+			}
+		} else {
+			break
+		}
+	}
+
+	return keys, nil
+}
+
 func HashSet(key string, hashField interface{}, val interface{}) error {
 	if utils.IsEmpty(key) || hashField == nil || val == nil {
 		return errors.New("invalid arguments")
@@ -743,7 +800,28 @@ func parse(reply interface{}, valPtr interface{}) (err error) {
 		valueInterface, err = redis.Bool(reply, nil)
 		break
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32:
-		valueInterface, err = redis.Int(reply, nil)
+		if vi, e := redis.Int(reply, nil); e != nil {
+			err = e
+		} else {
+			switch objVale.Kind() {
+			case reflect.Int:
+				valueInterface = vi
+			case reflect.Int8:
+				valueInterface = int8(vi)
+			case reflect.Int16:
+				valueInterface = int16(vi)
+			case reflect.Int32:
+				valueInterface = int32(vi)
+			case reflect.Uint:
+				valueInterface = uint(vi)
+			case reflect.Uint8:
+				valueInterface = uint8(vi)
+			case reflect.Uint16:
+				valueInterface = uint16(vi)
+			default:
+				valueInterface = uint32(vi)
+			}
+		}
 		break
 	case reflect.Int64:
 		valueInterface, err = redis.Int64(reply, nil)
