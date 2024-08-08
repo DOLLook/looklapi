@@ -70,6 +70,33 @@ func Get(key string, valPtr interface{}) error {
 	return parse(reply, valPtr)
 }
 
+// 增减值
+func Incr(key string, incrVal int, afterIncr *int) error {
+	if utils.IsEmpty(key) {
+		return errors.New("invalid key")
+	}
+
+	conn := getConn(key)
+	if conn.Err() != nil {
+		return conn.Err()
+	}
+	defer conn.Close()
+
+	reply, err := conn.Do("INCRBY", key, incrVal)
+	if err != nil {
+		return err
+	}
+
+	if afterIncr == nil {
+		return nil
+	}
+
+	if err := parse(reply, afterIncr); err != nil {
+		return err
+	}
+	return nil
+}
+
 // 模糊查询keys
 // dbIndex 数据库索引0-15
 // pattern 模式匹配规则 示例: 前缀匹配 prefix*, 后缀匹配 *suffix, 中间匹配 *mid*
