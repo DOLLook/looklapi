@@ -2,7 +2,6 @@ package mqutils
 
 import (
 	"errors"
-	"github.com/streadway/amqp"
 	"looklapi/common/appcontext"
 	"looklapi/common/loggers"
 	serviceDiscovery "looklapi/common/service-discovery"
@@ -11,6 +10,8 @@ import (
 	"looklapi/errs"
 	"reflect"
 	"time"
+
+	"github.com/streadway/amqp"
 )
 
 type consumerBinder struct {
@@ -120,7 +121,8 @@ func bindWorkQueueConsumer(consumer *consumer) {
 			case err := <-errChan:
 				loggers.GetLogger().Error(err)
 				removeConsumerChannel(recChan)
-				bindConsumer(consumer)
+				// bindConsumer(consumer)
+				bindWorkQueueConsumer(consumer)
 				return
 			}
 		}
@@ -186,7 +188,8 @@ func bindBroadcastConsumer(consumer *consumer) {
 			case err := <-errChan:
 				loggers.GetLogger().Error(err)
 				removeConsumerChannel(recChan)
-				bindConsumer(consumer)
+				// bindConsumer(consumer)
+				bindBroadcastConsumer(consumer)
 				return
 			}
 		}

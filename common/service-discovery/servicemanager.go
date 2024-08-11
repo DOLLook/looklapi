@@ -2,8 +2,6 @@ package service_discovery
 
 import (
 	"fmt"
-	consulApi "github.com/hashicorp/consul/api"
-	"github.com/robfig/cron/v3"
 	"looklapi/common/appcontext"
 	"looklapi/common/loggers"
 	"looklapi/common/redisutils"
@@ -11,6 +9,10 @@ import (
 	appConfig "looklapi/config"
 	"looklapi/model/modelimpl"
 	"reflect"
+	"slices"
+
+	consulApi "github.com/hashicorp/consul/api"
+	"github.com/robfig/cron/v3"
 )
 
 var svManager *serviceManager
@@ -23,6 +25,7 @@ type serviceManager struct {
 	hostEndpoint      string                             // 本机endpoint
 	updateTask        *cron.Cron                         // 服务更新任务
 	isReady           bool                               // 是否就绪
+	isCutoff          bool                               // 本机是否断流
 }
 
 func init() {
@@ -66,7 +69,8 @@ func (manager *serviceManager) initialize() {
 	manualService := &modelimpl.ManualService{}
 	if err := redisutils.Get(redisutils.CONFIG_MANUAL_SERVICE, manualService); err == nil {
 		if !utils.CollectionIsEmpty(manualService.Cutoff) {
-			manager.cutoffCache = append(svManager.cutoffCache, manualService.Cutoff...)
+			manager.cutoffCache = append(manager.cutoffCache, manualService.Cutoff...)
+			manager.isCutoff = slices.Contains(manager.cutoffCache, manager.hostEndpoint)
 		}
 
 		if !utils.CollectionIsEmpty(manualService.Healthy) {
@@ -86,15 +90,21 @@ func (manager *serviceManager) initialize() {
 
 // 更新服务配置
 func (manager *serviceManager) UpdateManualService(manualService *modelimpl.ManualService) {
-	manager.cutoffCache = manager.cutoffCache[0:0]
+	cutoff := make([]string, 0)
 	if manualService != nil && !utils.CollectionIsEmpty(manualService.Cutoff) {
-		manager.cutoffCache = append(manager.cutoffCache, manualService.Cutoff...)
+		cutoff = append(cutoff, manualService.Cutoff...)
+		manager.cutoffCache = cutoff
+		manager.isCutoff = slices.Contains(cutoff, manager.hostEndpoint)
+	} else {
+		manager.cutoffCache = cutoff
+		manager.isCutoff = false
 	}
 
-	manager.forceHealthyCache = manager.forceHealthyCache[0:0]
+	forceHealthy := make([]*modelimpl.ServiceModel, 0)
 	if manualService != nil && !utils.CollectionIsEmpty(manualService.Healthy) {
-		manager.forceHealthyCache = append(manager.forceHealthyCache, manualService.Healthy...)
+		forceHealthy = append(forceHealthy, manualService.Healthy...)
 	}
+	manager.forceHealthyCache = forceHealthy
 }
 
 // 更新服务自动发现健康服务
@@ -125,7 +135,8 @@ func (manager *serviceManager) GetHealthServices(serviceName string) []string {
 	}
 
 	if len(serviceList) < 1 {
-		forceHealthy := utils.NewCommonSlice(manager.forceHealthyCache).Filter(func(item interface{}) bool {
+		forceHealthyCopy := manager.forceHealthyCache
+		forceHealthy := utils.NewCommonSlice(forceHealthyCopy).Filter(func(item interface{}) bool {
 			return serviceName == item.(*modelimpl.ServiceModel).ServiceName
 		})
 
@@ -144,7 +155,7 @@ func (manager *serviceManager) IsHostCutoff() bool {
 	if !manager.isReady {
 		return false
 	}
-	return utils.ArrayOrSliceContains(manager.cutoffCache, manager.hostEndpoint)
+	return manager.isCutoff
 }
 
 func convertServiceModel(agentServiceMap map[string][]*consulApi.AgentService) map[string]*modelimpl.ServiceModel {
