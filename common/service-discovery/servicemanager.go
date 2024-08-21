@@ -25,7 +25,7 @@ type serviceManager struct {
 	hostEndpoint      string                             // 本机endpoint
 	updateTask        *cron.Cron                         // 服务更新任务
 	isReady           bool                               // 是否就绪
-	isCutoff          bool                               // 本机是否强制断流
+	isCutoff          bool                               // 本机是否断流
 }
 
 func init() {
@@ -69,7 +69,7 @@ func (manager *serviceManager) initialize() {
 	manualService := &modelimpl.ManualService{}
 	if err := redisutils.Get(redisutils.CONFIG_MANUAL_SERVICE, manualService); err == nil {
 		if !utils.CollectionIsEmpty(manualService.Cutoff) {
-			manager.cutoffCache = append(svManager.cutoffCache, manualService.Cutoff...)
+			manager.cutoffCache = append(manager.cutoffCache, manualService.Cutoff...)
 			manager.isCutoff = slices.Contains(manager.cutoffCache, manager.hostEndpoint)
 		}
 
