@@ -2,7 +2,7 @@ package mqutils
 
 import (
 	"errors"
-	"github.com/streadway/amqp"
+	"fmt"
 	"looklapi/common/appcontext"
 	"looklapi/common/loggers"
 	serviceDiscovery "looklapi/common/service-discovery"
@@ -11,9 +11,13 @@ import (
 	"looklapi/errs"
 	"reflect"
 	"time"
+
+	"github.com/streadway/amqp"
 )
 
 type consumerBinder struct {
+	workqueueReconnectCh chan *consumer
+	broadcastReconnectCh chan *consumer
 }
 
 // received app event and process.
@@ -25,8 +29,76 @@ func (binder *consumerBinder) OnApplicationEvent(event interface{}) {
 		return
 	}
 
+	workerCount, broadcasterCount := 0, 0
+	for _, consumer := range _consumerContainer {
+		switch consumer.Type {
+		case _WorkQueue:
+			workerCount += int(consumer.Concurrency)
+		case _Broadcast:
+			broadcasterCount += 1
+		}
+	}
+	binder.workqueueReconnectCh = make(chan *consumer, workerCount)
+	binder.broadcastReconnectCh = make(chan *consumer, broadcasterCount)
+
+	go func() {
+		defer loggers.RecoverLog()
+		lastReconnectOk := true
+		continueErr := 0
+		for c := range binder.workqueueReconnectCh {
+			if !lastReconnectOk {
+				if continueErr > 10 {
+					continueErr = 10
+				}
+				waitSecs := continueErr
+				if waitSecs < 1 {
+					waitSecs = 1
+				}
+				loggers.GetLogger().Warn(fmt.Sprintf("last reconnect failed, wait %d seconds to reconnect", waitSecs))
+				time.Sleep(time.Duration(waitSecs) * time.Second)
+			}
+
+			lastReconnectOk = binder.bindWorkQueueConsumer(c)
+			if lastReconnectOk {
+				continueErr = 0
+				loggers.GetLogger().Warn("reconnect success, workqueue consumer: " + c.RouteKey)
+			} else {
+				continueErr += 1
+				binder.workqueueReconnectCh <- c
+			}
+		}
+	}()
+
+	go func() {
+		defer loggers.RecoverLog()
+		lastReconnectOk := true
+		continueErr := 0
+		for c := range binder.broadcastReconnectCh {
+			if !lastReconnectOk {
+				if continueErr > 10 {
+					continueErr = 10
+				}
+				waitSecs := continueErr
+				if waitSecs < 1 {
+					waitSecs = 1
+				}
+				loggers.GetLogger().Warn(fmt.Sprintf("last reconnect failed, wait %d seconds to reconnect", waitSecs))
+				time.Sleep(time.Duration(waitSecs) * time.Second)
+			}
+
+			lastReconnectOk = binder.bindBroadcastConsumer(c)
+			if lastReconnectOk {
+				continueErr = 0
+				loggers.GetLogger().Warn("reconnect success, broadcast consumer: " + c.Exchange)
+			} else {
+				continueErr += 1
+				binder.broadcastReconnectCh <- c
+			}
+		}
+	}()
+
 	for _, item := range _consumerContainer {
-		bindConsumer(item)
+		binder.bindConsumer(item)
 	}
 	_hasConsumerBind = true
 	loggers.GetLogger().Info("mq init complete")
@@ -46,7 +118,7 @@ func init() {
 }
 
 // 绑定消费者
-func bindConsumer(consumer *consumer) {
+func (binder *consumerBinder) bindConsumer(consumer *consumer) {
 	if consumer == nil {
 		loggers.GetLogger().Error(errors.New("invalid nil consumer"))
 		return
@@ -55,53 +127,55 @@ func bindConsumer(consumer *consumer) {
 	switch consumer.Type {
 	case _WorkQueue:
 		for i := uint32(0); i < consumer.Concurrency; i++ {
-			bindWorkQueueConsumer(consumer)
+			if !binder.bindWorkQueueConsumer(consumer) {
+				binder.workqueueReconnectCh <- consumer
+			}
 		}
-		break
 	case _Broadcast:
-		bindBroadcastConsumer(consumer)
-		break
+		if !binder.bindBroadcastConsumer(consumer) {
+			binder.broadcastReconnectCh <- consumer
+		}
 	}
 }
 
 // 绑定工作队列消费者
 // consumer 消费者
-func bindWorkQueueConsumer(consumer *consumer) {
+func (binder *consumerBinder) bindWorkQueueConsumer(consumer *consumer) bool {
 	if consumer == nil {
 		loggers.GetLogger().Error(errors.New("invalid nil consumer"))
-		return
+		return false
 	}
 
 	if consumer.Type != _WorkQueue {
 		loggers.GetLogger().Error(errors.New("invalid consumer type"))
-		return
+		return false
 	}
 
 	if consumer.Consume == nil {
 		loggers.GetLogger().Error(errors.New("must bind consume func"))
-		return
+		return false
 	}
 
 	recChan, err := getConsumerChannel()
 	if err != nil {
 		loggers.GetLogger().Error(err)
-		return
+		return false
 	}
 
 	if _, err := recChan.Channel.QueueDeclare(consumer.RouteKey, true, false, false, false, nil); err != nil {
 		loggers.GetLogger().Error(err)
-		return
+		return false
 	}
 
 	if err := recChan.Channel.Qos(int(consumer.PrefetchCount), 0, false); err != nil {
 		loggers.GetLogger().Error(err)
-		return
+		return false
 	}
 
 	deliverCh, err := recChan.Channel.Consume(consumer.RouteKey, "", false, false, false, false, nil)
 	if err != nil {
 		loggers.GetLogger().Error(err)
-		return
+		return false
 	}
 
 	errChan := make(chan *amqp.Error, 1)
@@ -120,58 +194,60 @@ func bindWorkQueueConsumer(consumer *consumer) {
 			case err := <-errChan:
 				loggers.GetLogger().Error(err)
 				removeConsumerChannel(recChan)
-				bindConsumer(consumer)
+				// bindWorkQueueConsumer(consumer)
+				binder.workqueueReconnectCh <- consumer
 				return
 			}
 		}
 	}()
 
 	addConsumerChannel(recChan)
+	return true
 }
 
 // 绑定广播队列消费者
 // consumer 消费者
-func bindBroadcastConsumer(consumer *consumer) {
+func (binder *consumerBinder) bindBroadcastConsumer(consumer *consumer) bool {
 	if consumer == nil {
 		loggers.GetLogger().Error(errors.New("invalid nil consumer"))
-		return
+		return false
 	}
 
 	if consumer.Type != _Broadcast {
 		loggers.GetLogger().Error(errors.New("invalid consumer type"))
-		return
+		return false
 	}
 
 	if consumer.Consume == nil {
 		loggers.GetLogger().Error(errors.New("must bind consume func"))
-		return
+		return false
 	}
 
 	recChan, err := getConsumerChannel()
 	if err != nil {
 		loggers.GetLogger().Error(err)
-		return
+		return false
 	}
 	if err := recChan.Channel.ExchangeDeclare(consumer.Exchange, "fanout", false, true, false, false, nil); err != nil {
 		loggers.GetLogger().Error(err)
-		return
+		return false
 	}
 
 	queue, err := recChan.Channel.QueueDeclare("", false, true, true, false, nil)
 	if err != nil {
 		loggers.GetLogger().Error(err)
-		return
+		return false
 	}
 
 	if err := recChan.Channel.QueueBind(queue.Name, "", consumer.Exchange, false, nil); err != nil {
 		loggers.GetLogger().Error(err)
-		return
+		return false
 	}
 
 	deliverCh, err := recChan.Channel.Consume(queue.Name, "", false, true, false, false, nil)
 	if err != nil {
 		loggers.GetLogger().Error(err)
-		return
+		return false
 	}
 
 	errChan := make(chan *amqp.Error, 1)
@@ -186,13 +262,15 @@ func bindBroadcastConsumer(consumer *consumer) {
 			case err := <-errChan:
 				loggers.GetLogger().Error(err)
 				removeConsumerChannel(recChan)
-				bindConsumer(consumer)
+				// bindBroadcastConsumer(consumer)
+				binder.broadcastReconnectCh <- consumer
 				return
 			}
 		}
 	}()
 
 	addConsumerChannel(recChan)
+	return true
 }
 
 func consume(delivery *amqp.Delivery, consumer *consumer) {
