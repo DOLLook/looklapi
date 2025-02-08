@@ -74,7 +74,7 @@ func (manager *serviceManager) initialize() {
 		}
 
 		if !utils.CollectionIsEmpty(manualService.Healthy) {
-			manager.forceHealthyCache = append(svManager.forceHealthyCache, manualService.Healthy...)
+			manager.forceHealthyCache = append(manager.forceHealthyCache, manualService.Healthy...)
 		}
 	} else {
 		loggers.GetLogger().Error(err)
@@ -94,7 +94,7 @@ func (manager *serviceManager) UpdateManualService(manualService *modelimpl.Manu
 	if manualService != nil && !utils.CollectionIsEmpty(manualService.Cutoff) {
 		cutoff = append(cutoff, manualService.Cutoff...)
 		manager.cutoffCache = cutoff
-		manager.isCutoff = slices.Contains(manager.cutoffCache, manager.hostEndpoint)
+		manager.isCutoff = slices.Contains(cutoff, manager.hostEndpoint)
 	} else {
 		manager.cutoffCache = cutoff
 		manager.isCutoff = false
@@ -155,7 +155,6 @@ func (manager *serviceManager) IsHostCutoff() bool {
 	if !manager.isReady {
 		return false
 	}
-	// return utils.ArrayOrSliceContains(manager.cutoffCache, manager.hostEndpoint)
 	return manager.isCutoff
 }
 
